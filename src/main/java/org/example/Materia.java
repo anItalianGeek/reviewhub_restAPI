@@ -1,0 +1,15 @@
+package org.example;
+
+public enum Materia {
+    MATEMATICA,
+    ITALIANO,
+    CHIMICA,
+    FISICA,
+    STORIA,
+    GESTIONE_PROGETTO_ED_ORGANIZZAZIONE_IMPRESA,
+    DIRITTO_ECONOMIA,
+    TPSIT,
+    TTRG,
+    INGLESE,
+    EDUCAZIONE_FISICA
+}
