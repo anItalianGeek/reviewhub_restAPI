@@ -7,12 +7,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class ConnectionManager extends Thread {
     
     protected Socket clientConnection;
     protected PrintWriter pw;
     protected BufferedReader br;
+    protected Gson gson;
     
     public ConnectionManager(Socket clientConnection) {
         try {
@@ -21,6 +24,7 @@ public class ConnectionManager extends Thread {
             br = new BufferedReader(new InputStreamReader(clientConnection.getInputStream()));
         } catch (IOException ex) {
         }
+        gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
     @Override
