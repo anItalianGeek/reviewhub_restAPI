@@ -5,7 +5,7 @@ import jdk.dynalink.beans.StaticClass;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class SHA256Encryptor {
+public final class SHA256Encryptor {
 
     public static String encrypt(String input) {
         try {

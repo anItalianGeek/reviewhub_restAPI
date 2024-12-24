@@ -1,4 +1,4 @@
-package org.example.models.dbmodels;
+package org.example.models;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -14,12 +14,12 @@ public class IscrizioneSportello {
     @ManyToOne
     @MapsId("sportelloId")
     @JoinColumn(name = "id_sportello")
-    private SportelloDB sportello;
+    private Sportello sportello;
 
     @ManyToOne
     @MapsId("personaId")
     @JoinColumn(name = "persona_iscritta")
-    private PersonaDB persona;
+    private Persona persona;
 
     public IscrizioneSportello() {}
 }

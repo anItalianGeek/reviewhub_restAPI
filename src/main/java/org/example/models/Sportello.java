@@ -1,86 +1,104 @@
 package org.example.models;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.LinkedList;
+import javax.persistence.*;
+import java.util.List;
 
+@Entity
+@Table(name = "sportello")
 public class Sportello {
-    
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_sportello")
     private long id_sportello;
-    private String nomeSportello;
+
+    @Column(name = "nome_sportello")
+    private String nome_sportello;
+
+    @Column(name = "max_iscritti")
+    private int max_iscritti;
+
+    @Column(name = "num_ipscritti")
+    private int num_iscritti;
+
+    @ManyToOne
+    @JoinColumn(name = "aula_id")
+    private Aula aula;
+
+    @ManyToOne
+    @JoinColumn(name = "materia_id")
     private Materia materia;
-    private LocalDateTime[] dates;
-    private int maxPosti;
-    private int numIscritti;
-    private LinkedList<String> iscritti;
-    private String docenteResponsabile;
-    private int aula;
-    
+
+    @ManyToOne
+    @JoinColumn(name = "docente_responsabile")
+    private Persona docente_responsabile;
+
+    @OneToMany(mappedBy = "sportello")
+    private List<Giorno> giorni;
+
     public Sportello() {}
 
-    public String getNomeSportello() {
-        return nomeSportello;
+    public String getNome_sportello() {
+        return nome_sportello;
     }
 
-    public void setNomeSportello(String nomeSportello) {
-        this.nomeSportello = nomeSportello;
+    public int getMax_iscritti() {
+        return max_iscritti;
+    }
+
+    public int getNum_iscritti() {
+        return num_iscritti;
+    }
+
+    public Aula getAula() {
+        return aula;
     }
 
     public Materia getMateria() {
         return materia;
     }
 
+    public Persona getDocente_responsabile() {
+        return docente_responsabile;
+    }
+
+    public List<Giorno> getGiorni() {
+        return giorni;
+    }
+
+    public long getId_sportello() {
+        return id_sportello;
+    }
+
+    public void setId_sportello(long id_sportello) {
+        this.id_sportello = id_sportello;
+    }
+
+    public void setNome_sportello(String nome_sportello) {
+        this.nome_sportello = nome_sportello;
+    }
+
+    public void setMax_iscritti(int max_iscritti) {
+        this.max_iscritti = max_iscritti;
+    }
+
+    public void setNum_iscritti(int num_iscritti) {
+        this.num_iscritti = num_iscritti;
+    }
+
+    public void setAula(Aula aula) {
+        this.aula = aula;
+    }
+
     public void setMateria(Materia materia) {
         this.materia = materia;
     }
 
-    public LocalDateTime[] getDates() {
-        return dates;
+    public void setDocente_responsabile(Persona docente_responsabile) {
+        this.docente_responsabile = docente_responsabile;
     }
 
-    public void setDates(LocalDateTime[] dates) {
-        this.dates = dates;
+    public void setGiorni(List<Giorno> giorni) {
+        this.giorni = giorni;
     }
-
-    public int getMaxPosti() {
-        return maxPosti;
-    }
-
-    public void setMaxPosti(int maxPosti) {
-        this.maxPosti = maxPosti;
-    }
-
-    public int getNumIscritti() {
-        return numIscritti;
-    }
-
-    public void setNumIscritti(int numIscritti) {
-        this.numIscritti = numIscritti;
-    }
-
-    public String getDocenteResponsabile() {
-        return docenteResponsabile;
-    }
-
-    public void setDocenteResponsabile(String docenteResponsabile) {
-        this.docenteResponsabile = docenteResponsabile;
-    }
-
-    public int getAula() {
-        return aula;
-    }
-
-    public void setAula(int aula) {
-        this.aula = aula;
-    }
-
-    public LinkedList<String> getIscritti() {
-        return iscritti;
-    }
-
-    public void setIscritti(LinkedList<String> iscritti) {
-        this.iscritti = iscritti;
-    }
-    
 }
