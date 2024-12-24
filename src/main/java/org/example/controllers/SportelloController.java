@@ -71,7 +71,7 @@ public final class SportelloController {
             if (sportello.getMateria().getId() != datiSportello.getMateria().getId()) sportello.setMateria(sportello.getMateria());
             if (sportello.getDocente_responsabile().getEmail() != datiSportello.getDocente_responsabile().getEmail()) sportello.setDocente_responsabile(datiSportello.getDocente_responsabile());
             if (!sportello.getGiorni().equals(datiSportello.getGiorni())) sportello.setGiorni(datiSportello.getGiorni());
-            sportelloRepository.save(sportello);
+            return sportelloRepository.save(sportello);
         }
     }
     
