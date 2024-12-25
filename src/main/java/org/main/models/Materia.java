@@ -1,30 +1,31 @@
-package org.example.models;
+package org.main.models;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+
 import java.util.List;
 
 @Entity
-@Table(name = "aula")
-public class Aula {
+@Table(name = "materia")
+public class Materia {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private long id;
+    @Column(name = "id_materia")
+    private int id;
 
     @Column(name = "nome")
     private String nome;
 
-    @OneToMany(mappedBy = "aula")
+    @OneToMany(mappedBy = "materia")
     private List<Sportello> sportelli;
 
-    public Aula() {}
+    public Materia() {}
 
     public long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -43,4 +44,5 @@ public class Aula {
     public void setNome(String nome) {
         this.nome = nome;
     }
+    
 }

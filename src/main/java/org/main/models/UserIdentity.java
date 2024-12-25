@@ -1,4 +1,4 @@
-package org.example.models;
+package org.main.models;
 
 public enum UserIdentity {
     STUDENT,

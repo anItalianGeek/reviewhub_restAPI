@@ -1,4 +1,4 @@
-package org.example.interfaces;
+package org.main.interfaces;
 
 public interface Interactable {
     String getFullName();

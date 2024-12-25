@@ -1,4 +1,4 @@
-package org.example.main;
+package org.main.essentials;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,9 +9,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.example.models.UserIdentity;
-
-import javax.swing.plaf.basic.BasicTreeUI;
 
 public class ConnectionManager extends Thread {
     
@@ -32,16 +29,5 @@ public class ConnectionManager extends Thread {
 
     @Override
     public void run() {
-        AccessRequest accessRequest;
-        try {
-            accessRequest = gson.fromJson(br.readLine(), AccessRequest.class);
-        } catch (IOException ioe) {}
     }
-}
-
-class AccessRequest {
-    
-    private String username;
-    private String password;
-    
 }

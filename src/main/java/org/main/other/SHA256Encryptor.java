@@ -1,6 +1,4 @@
-package org.example.other;
-
-import jdk.dynalink.beans.StaticClass;
+package org.main.other;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
