@@ -9,6 +9,8 @@ import org.main.models.UserIdentity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,49 +31,17 @@ public class SportelloController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Sportello>> getSportelli(@RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
-        
+    public ResponseEntity<List<Sportello>> getSportelli() {
         return new ResponseEntity<>(sportelloRepository.findAll(), HttpStatus.OK);
     }
 
     @GetMapping("/available")
-    public ResponseEntity<List<Sportello>> getSportelliDisponibili(@RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        
+    public ResponseEntity<List<Sportello>> getSportelliDisponibili() {
         return new ResponseEntity<>(sportelloRepository.getSportelliDisponibili(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Sportello> getSportelloById(@PathVariable long id, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        
+    public ResponseEntity<Sportello> getSportelloById(@PathVariable long id) {
         Sportello response = sportelloRepository.findById(id).orElse(null);
         if (response == null)
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -80,41 +50,13 @@ public class SportelloController {
     }
 
     @GetMapping("/by/{username}")
-    public ResponseEntity<List<Sportello>> getSportelliByDocente(@PathVariable String username, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), username + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.TEACHER, username + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
-        
+    public ResponseEntity<List<Sportello>> getSportelliByDocente(@PathVariable String username) {
         return new ResponseEntity<>(sportelloRepository.getSportelliByDocente(username + DOMAIN), HttpStatus.OK);
     }
 
-    @PostMapping("/{id}/subscribe")
+    @PostMapping("/subscribe/{id}")
     @Transactional
-    public ResponseEntity<String> iscriviAlloSportello(@PathVariable long id, @RequestBody Persona user, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), user.getEmail());
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.STUDENT, user.getEmail());
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
-        
+    public ResponseEntity<String> iscriviAlloSportello(@PathVariable long id, @RequestBody Persona user) {
         int righeModificate = sportelloRepository.aggiungiIscritto(id);
 
         if (righeModificate == 0)
@@ -132,27 +74,7 @@ public class SportelloController {
 
     @PostMapping("/create")
     @Transactional
-    public ResponseEntity<String> creaSportello(@RequestBody Sportello datiNuovoSportello, @RequestParam String author, HttpServletRequest request){
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.TEACHER, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck) {
-                    permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                    
-                    if (permissionCheck == null || !permissionCheck)
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                    else
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                }
-            }
-        }
-        
+    public ResponseEntity<String> creaSportello(@RequestBody Sportello datiNuovoSportello){
         int modificaCompiuta = sportelloRepository.creaSportello(datiNuovoSportello.getNome_sportello(), datiNuovoSportello.getMax_iscritti(), datiNuovoSportello.getMateria().getId(), datiNuovoSportello.getAula().getId(), datiNuovoSportello.getDocente_responsabile().getEmail());
         if (modificaCompiuta == 0)
             return new ResponseEntity<>("Operazione fallita", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -160,29 +82,9 @@ public class SportelloController {
             return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.CREATED);
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/modify/{id}")
     @Transactional
-    public ResponseEntity<Sportello> aggiornaSportello(@RequestBody Sportello datiSportello, @PathVariable long id, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.TEACHER, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck) {
-                    permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-
-                    if (permissionCheck == null || !permissionCheck)
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                    else
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                }
-            }
-        }
-        
+    public ResponseEntity<Sportello> aggiornaSportello(@RequestBody Sportello datiSportello, @PathVariable long id) {
         Sportello sportello = sportelloRepository.findById(id).orElse(null);
         if (sportello == null || sportello.getId_sportello() != id)
             return null;
@@ -199,47 +101,13 @@ public class SportelloController {
 
     @DeleteMapping("/remove/{id}")
     public ResponseEntity<String> cancellaSportello(@PathVariable long id, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.TEACHER, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck) {
-                    permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-
-                    if (permissionCheck == null || !permissionCheck)
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                    else
-                        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-                }
-            }
-        }
-        
         sportelloRepository.deleteById(id);
         return new ResponseEntity<>("Operazione avvenuta con successo", HttpStatus.NO_CONTENT);
     }
 
-    @DeleteMapping("/{id}/unsubscribe")
+    @DeleteMapping("/unsubscribe/{id}")
     @Transactional
-    public ResponseEntity<String> disiscriviDalloSportello(@PathVariable long id, @RequestBody Persona persona, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), persona.getEmail());
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.STUDENT, persona.getEmail());
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
-        
+    public ResponseEntity<String> disiscriviDalloSportello(@PathVariable long id, @RequestBody Persona persona) {
         int rowsAffected = sportelloRepository.rimuoviIscritto(id);
         if (rowsAffected == 0)
             return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);

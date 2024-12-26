@@ -15,6 +15,9 @@ dependencies {
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '3.4.1'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '3.4.1'
     implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.33'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat', version: '3.4.1'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '3.4.1'
+    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '11.0.2'
     implementation 'com.google.code.gson:gson:2.11.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')

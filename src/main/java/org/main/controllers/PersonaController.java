@@ -27,38 +27,12 @@ public class PersonaController {
     }
     
     @GetMapping("/all")
-    public ResponseEntity<List<Persona>> getTuttePersone(HttpServletRequest request, @RequestParam String author) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
+    public ResponseEntity<List<Persona>> getTuttePersone() {
         return new ResponseEntity<>(personaRepository.findAll(), HttpStatus.OK);
     }
     
     @GetMapping("/{username}")
-    public ResponseEntity<Persona> getPersonaById(@PathVariable String username, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
+    public ResponseEntity<Persona> getPersonaById(@PathVariable String username) {
         return new ResponseEntity<>(personaRepository.findById(username + DOMAIN).orElse(null), HttpStatus.OK);
     }
     
@@ -70,20 +44,7 @@ public class PersonaController {
     }
     
     @PostMapping("/create") // todo users must be able to create an account without needing the admin to approve
-    public ResponseEntity<String> aggiungiPersona(@RequestBody Persona datiNuovaPersona, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else if (!datiNuovaPersona.getEmail().substring(0, datiNuovaPersona.getEmail().indexOf("@")).equals(author)) {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
+    public ResponseEntity<String> aggiungiPersona(@RequestBody Persona datiNuovaPersona) {
         int operationResult = personaRepository.aggiungiNuovaPersona(datiNuovaPersona.getEmail(), datiNuovaPersona.getNome(), datiNuovaPersona.getCognome(), datiNuovaPersona.getPassword(), datiNuovaPersona.getRuolo(), datiNuovaPersona.getClasse());
         if (operationResult == 0)
             return new ResponseEntity<>("Operazione fallita.", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -93,21 +54,7 @@ public class PersonaController {
     
     @PutMapping("/modify/{user}")
     @Transactional
-    public ResponseEntity<Persona> aggiornaPersona(@RequestBody Persona datiPersona, @PathVariable String user, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else if (!user.equals(author)) {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
-    
+    public ResponseEntity<Persona> aggiornaPersona(@RequestBody Persona datiPersona, @PathVariable String user) {
         Persona persona = personaRepository.findById(user + DOMAIN).orElse(null);
         
         if (persona == null || !(user + DOMAIN).equals(persona.getEmail()))
@@ -124,19 +71,6 @@ public class PersonaController {
     
     @DeleteMapping("/remove/{user}")
     public ResponseEntity<String> cancellaPersona(@PathVariable String user, @RequestParam String author, HttpServletRequest request) {
-        String permission = null;
-        if ((permission = request.getHeader("Authorization")) == null)
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        else {
-            Boolean permissionCheck = personaRepository.verificaCodice(permission.replace("Bearer ", ""), author + DOMAIN);
-            if (permissionCheck == null || !permissionCheck)
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            else if (!user.equals(author)) {
-                permissionCheck = personaRepository.verificaRuolo(UserIdentity.ADMIN, author + DOMAIN);
-                if (permissionCheck == null || !permissionCheck)
-                    return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-        }
         int rowsAffected = personaRepository.cancellaPersona(user + DOMAIN);
         if (rowsAffected == 0)
             return new ResponseEntity<>("Operazione fallita o senza effetto.", HttpStatus.NOT_FOUND);

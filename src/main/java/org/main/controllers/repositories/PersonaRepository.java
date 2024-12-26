@@ -28,6 +28,9 @@ public interface PersonaRepository extends JpaRepository<Persona, String> {
     @Query(value = "SELECT TRUE FROM persona WHERE ruolo = :ruolo AND email = :user", nativeQuery = true)
     Boolean verificaRuolo(@Param("ruolo") UserIdentity ruolo, @Param("user") String user);
     
+    @Query(value = "SELECT ruolo FROM persona WHERE email = :user", nativeQuery = true)
+    UserIdentity ottieniRuolo(@Param("user") String user);
+    
     @Query(value = "INSERT INTO auth_token (token, user_id) VALUES (:generated_token, :user)", nativeQuery = true)
     @Modifying
     @Transactional

@@ -27,7 +27,7 @@ public class Shell extends Thread {
             }
 
             // Exit the shell if the user types 'exit'
-            if (input.equals("exit")) {
+            if (input == null|| input.equals("exit")) {
                 break;
             }
 
