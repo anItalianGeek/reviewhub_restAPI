@@ -1,16 +1,13 @@
-package org.main.controllers;
+package org.main.controllers.rest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.main.controllers.repositories.PersonaRepository;
 import org.main.controllers.repositories.SportelloRepository;
 import org.main.models.Persona;
 import org.main.models.Sportello;
-import org.main.models.UserIdentity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 

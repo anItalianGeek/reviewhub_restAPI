@@ -1,9 +1,8 @@
-package org.main.controllers;
+package org.main.controllers.rest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.main.controllers.repositories.PersonaRepository;
 import org.main.models.Persona;
-import org.main.models.UserIdentity;
 import org.main.other.SHA256Encryptor;
 import org.main.other.ServerSignatureGenerator;
 import org.springframework.beans.factory.annotation.Autowired;

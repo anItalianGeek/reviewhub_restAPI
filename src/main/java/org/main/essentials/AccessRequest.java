@@ -4,6 +4,7 @@ public class AccessRequest {
     
     private String username;
     private String password;
+    private String hash;
         
     public AccessRequest(String username, String password) {
         this.username = username;
@@ -24,5 +25,13 @@ public class AccessRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
     }
 }

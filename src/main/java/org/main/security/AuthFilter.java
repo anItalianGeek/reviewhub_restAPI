@@ -2,22 +2,15 @@ package org.main.security;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.aspectj.weaver.patterns.PerObject;
 import org.main.controllers.repositories.PersonaRepository;
 import org.main.models.Persona;
 import org.main.models.Sportello;
-import org.main.models.UserIdentity;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -125,4 +118,5 @@ public class AuthFilter extends OncePerRequestFilter {
         BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream()));
         return reader.lines().collect(Collectors.joining(System.lineSeparator()));
     }
+    
 }
