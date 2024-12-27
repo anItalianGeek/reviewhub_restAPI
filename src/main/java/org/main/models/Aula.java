@@ -9,7 +9,6 @@ import java.util.List;
 public class Aula {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int id;
 
@@ -20,6 +19,12 @@ public class Aula {
     private List<Sportello> sportelli;
 
     public Aula() {}
+
+    public Aula(int id, String nome, List<Sportello> sportelli) {
+        this.id = id;
+        this.nome = nome;
+        this.sportelli = sportelli;
+    }
 
     public long getId() {
         return id;

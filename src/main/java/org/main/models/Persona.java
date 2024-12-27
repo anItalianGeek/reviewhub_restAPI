@@ -33,6 +33,16 @@ public class Persona {
 
     public Persona() {}
 
+    public Persona(String email, String classe, String password, UserIdentity ruolo, String cognome, String nome, List<Sportello> sportelli) {
+        this.email = email;
+        this.classe = classe;
+        this.password = password;
+        this.ruolo = ruolo;
+        this.cognome = cognome;
+        this.nome = nome;
+        this.sportelli = sportelli;
+    }
+
     public String getEmail() {
         return email;
     }

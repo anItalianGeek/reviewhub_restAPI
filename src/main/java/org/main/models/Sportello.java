@@ -39,6 +39,17 @@ public class Sportello {
 
     public Sportello() {}
 
+    public Sportello(long id_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, String nome_sportello, List<Giorno> giorni) {
+        this.id_sportello = id_sportello;
+        this.docente_responsabile = docente_responsabile;
+        this.materia = materia;
+        this.aula = aula;
+        this.num_iscritti = num_iscritti;
+        this.max_iscritti = max_iscritti;
+        this.nome_sportello = nome_sportello;
+        this.giorni = giorni;
+    }
+
     public String getNome_sportello() {
         return nome_sportello;
     }

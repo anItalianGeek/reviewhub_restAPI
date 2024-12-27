@@ -21,6 +21,12 @@ public class Materia {
 
     public Materia() {}
 
+    public Materia(String nome, int id, List<Sportello> sportelli) {
+        this.nome = nome;
+        this.id = id;
+        this.sportelli = sportelli;
+    }
+
     public long getId() {
         return id;
     }
