@@ -27,6 +27,22 @@ public final class ClientTeacherHandler {
         gson = new GsonBuilder().create();
     }
     
+    public String visualizzaSportelliGestiti() {
+        return null;
+    }
+    
+    public String creaSportello() {
+        return null;
+    }
+    
+    public String modificaSportello() {
+        return null;
+    }
+    
+    public String cancellaSportello() {
+        return null;
+    }
+    
     public boolean verificaAutenticita(String username, String password, String hash) {
         try {
             ResultSet resultSet = statement.executeQuery("SELECT TRUE FROM persona WHERE email = " + username + " AND password = " + password + " AND ruolo = \"TEACHER\"");

@@ -37,6 +37,11 @@ public class SportelloController {
         return new ResponseEntity<>(sportelloRepository.getSportelliDisponibili(), HttpStatus.OK);
     }
 
+    @GetMapping("/subscribed")
+    public ResponseEntity<List<Sportello>> getSportelliPrenotati(@RequestParam String author) {
+        return new ResponseEntity<>(sportelloRepository.getSportelliPrenotati(author + DOMAIN), HttpStatus.OK);
+    }
+    
     @GetMapping("/{id}")
     public ResponseEntity<Sportello> getSportelloById(@PathVariable long id) {
         Sportello response = sportelloRepository.findById(id).orElse(null);

@@ -46,7 +46,7 @@ public class AuthFilter extends OncePerRequestFilter {
         // Verifica la validità del token
         if (authToken == null || !isValidAuthToken(username, authToken.replace("Bearer ", ""))) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized: Invalid Token");
+            response.getWriter().write("Unauthorized: Missing or Invalid Token");
             return;
         }
         
@@ -77,7 +77,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 response.getWriter().write("Forbidden: Insufficient Permissions");
                 return;
             }
-        } else if (path.matches("/sportello/subscribe/\\w+") || path.matches("/sportello/unsubscribe/\\w+")) {
+        } else if (path.matches("/sportello/subscribe/\\w+") || path.matches("/sportello/unsubscribe/\\w+") || path.matches("/sportello/subscribed")) {
             if (!role.equals("STUDENT")) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Forbidden: Insufficient Permissions");

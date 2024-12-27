@@ -13,35 +13,50 @@ import java.util.List;
 @Repository
 public interface SportelloRepository extends JpaRepository<Sportello, Long> {
 
-    @Query(value = "SELECT * FROM SportelloDB WHERE num_iscritti < max_iscritti", nativeQuery = true)
+    // Recupera tutti gli sportelli con num_iscritti < max_iscritti
+    @Query("SELECT s FROM Sportello s WHERE s.numIscritti < s.maxIscritti")
     List<Sportello> getSportelliDisponibili();
 
-    @Query(value = "SELECT * FROM SportelloDB WHERE docente_responsabile = :email_docente", nativeQuery = true)
-    List<Sportello> getSportelliByDocente(@Param("email_docente") String email_docente);
+    // Recupera gli sportelli per un docente specifico tramite email
+    @Query("SELECT s FROM Sportello s WHERE s.docenteResponsabile = :emailDocente")
+    List<Sportello> getSportelliByDocente(@Param("emailDocente") String emailDocente);
 
+    // Recupera gli sportelli a cui una persona è iscritta
+    @Query("SELECT s FROM Sportello s JOIN s.iscrizioni i WHERE i.persona.email = :username")
+    List<Sportello> getSportelliPrenotati(@Param("username") String username);
+
+    // Iscrivi una persona a uno sportello
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO iscrizione_sportello (id_sportello, persona_iscritta) VALUES (:id, :username)", nativeQuery = true)
+    @Query("INSERT INTO IscrizioneSportello (sportello.id, persona.email) VALUES (:id, :username)")
     int iscriviAlloSportello(@Param("id") long id, @Param("username") String username);
 
+    // Aggiungi un iscritto a uno sportello
     @Transactional
     @Modifying
-    @Query(value = "UPDATE SportelloDB SET num_iscritti = num_iscritti + 1 WHERE id_sportello = :id AND num_iscritti < max_iscritti", nativeQuery = true)
+    @Query("UPDATE Sportello s SET s.numIscritti = s.numIscritti + 1 WHERE s.id = :id AND s.numIscritti < s.maxIscritti")
     int aggiungiIscritto(@Param("id") long id);
 
+    // Crea uno sportello
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO SportelloDB (nome_sportello, num_iscritti, max_iscritti, aula_id, materia_id, docente_responsabile) VALUES (:nome_sportello, 0, :max_iscritti, :aula, :materia, :docente_responsabile)", nativeQuery = true)
-    int creaSportello(@Param("nome_sportello") String nome_sportello, @Param("max_iscritti") int max_iscritti, @Param("materia") long materia, @Param("aula") long aula, @Param("docente_responsabile") String docente_responsabile);
+    @Query("INSERT INTO Sportello (nomeSportello, numIscritti, maxIscritti, aula.id, materia.id, docenteResponsabile) " +
+            "VALUES (:nomeSportello, 0, :maxIscritti, :aula, :materia, :docenteResponsabile)")
+    int creaSportello(@Param("nomeSportello") String nomeSportello,
+                      @Param("maxIscritti") int maxIscritti,
+                      @Param("materia") long materia,
+                      @Param("aula") long aula,
+                      @Param("docenteResponsabile") String docenteResponsabile);
 
+    // Rimuovi un iscritto dallo sportello
     @Transactional
     @Modifying
-    @Query(value = "UPDATE SportelloDB SET num_iscritti = num_iscritti - 1 WHERE id_sportello = :id AND num_iscritti > 0", nativeQuery = true)
+    @Query("UPDATE Sportello s SET s.numIscritti = s.numIscritti - 1 WHERE s.id = :id AND s.numIscritti > 0")
     int rimuoviIscritto(@Param("id") long id);
 
+    // Cancella un'iscrizione dallo sportello
     @Transactional
     @Modifying
-    @Query(value = "DELETE FROM iscrizione_sportello WHERE id_sportello = :id AND persona_iscritta = :user", nativeQuery = true)
+    @Query("DELETE FROM IscrizioneSportello i WHERE i.sportello.id = :id AND i.persona.email = :user")
     int cancellaIscrizione(@Param("id") long id, @Param("user") String user);
-    
 }
