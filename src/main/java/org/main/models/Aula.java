@@ -26,7 +26,7 @@ public class Aula {
         this.sportelli = sportelli;
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 

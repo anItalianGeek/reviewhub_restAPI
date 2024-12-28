@@ -2,15 +2,11 @@ package org.main.controllers.socket;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jdk.dynalink.beans.StaticClass;
-import org.hibernate.annotations.processing.SQL;
+import org.main.controllers.socket.wrappers.WrapperSportelliStudente;
 import org.main.models.*;
-import org.springframework.cglib.core.Local;
 
-import javax.xml.transform.Result;
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
@@ -21,7 +17,7 @@ public final class ClientStudentHandler {
     private static final String username = "admin";
     private static final String password = "admin";
     private static Connection connection;
-    private Gson gson;
+    private final Gson gson;
     
     public ClientStudentHandler() {
         try {
@@ -94,7 +90,7 @@ public final class ClientStudentHandler {
                 );
                 sportello.getGiorni().add(giorno);
             }
-            return gson.toJson(new WrapperSportelli(new LinkedList<>(sportelloMap.values())));
+            return gson.toJson(new WrapperSportelliStudente(new LinkedList<>(sportelloMap.values())));
         } catch (SQLException se) {
             throw new RuntimeException(se);
         } finally {
@@ -153,7 +149,7 @@ public final class ClientStudentHandler {
                 );
                 sportello.getGiorni().add(giorno);
             }
-            return gson.toJson(new WrapperSportelli(new LinkedList<>(sportelloMap.values())));
+            return gson.toJson(new WrapperSportelliStudente(new LinkedList<>(sportelloMap.values())));
         } catch (SQLException se) {
             throw new RuntimeException(se);
         } finally {
@@ -224,13 +220,13 @@ public final class ClientStudentHandler {
         }
     }
     
-    public String aggiornaInformazioniPersonali(Persona informazioniPersona) {
+    public String aggiornaInformazioniPersonali(Persona informazioniPersona, String oldEmail) {
         try (
             PreparedStatement statement = connection.prepareStatement("SELECT nome, cognome, classe, password, email FROM persona WHERE email = ?");
             PreparedStatement updateStatement = connection.prepareStatement("UPDATE persona SET ? = ? WHERE email = ?")
         ) {
             P();
-            statement.setString(1, informazioniPersona.getEmail());
+            statement.setString(1, oldEmail);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 updateStatement.setString(3, resultSet.getString("email"));
@@ -284,18 +280,3 @@ public final class ClientStudentHandler {
     
 }
 
-class WrapperSportelli {
-    private LinkedList<Sportello> sportellos;
-    
-    public WrapperSportelli(LinkedList<Sportello> list){
-        sportellos = list;
-    }
-
-    public LinkedList<Sportello> getSportellos() {
-        return sportellos;
-    }
-
-    public void setSportellos(LinkedList<Sportello> sportellos) {
-        this.sportellos = sportellos;
-    }
-}

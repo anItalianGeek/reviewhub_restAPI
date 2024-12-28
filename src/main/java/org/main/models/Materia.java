@@ -27,7 +27,7 @@ public class Materia {
         this.sportelli = sportelli;
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 

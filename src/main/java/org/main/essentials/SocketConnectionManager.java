@@ -11,6 +11,7 @@ import com.google.gson.GsonBuilder;
 import org.main.controllers.socket.ClientStudentHandler;
 import org.main.controllers.socket.ClientTeacherHandler;
 import org.main.models.Persona;
+import org.main.models.Sportello;
 
 import javax.net.ssl.SSLSocket;
 
@@ -55,7 +56,7 @@ public final class SocketConnectionManager extends Thread {
                     }
                     case "aggiorna-dati-personali" -> {
                         String datiPersonali = br.readLine();
-                        pw.println(studentHandler.aggiornaInformazioniPersonali(gson.fromJson(datiPersonali, Persona.class)));
+                        pw.println(studentHandler.aggiornaInformazioniPersonali(gson.fromJson(datiPersonali, Persona.class), accessRequest.getUsername()));
                     }
                     case "sportelli-prenotati" -> {pw.println(studentHandler.getSportelliIscritti(accessRequest.getUsername()));}
                     case "close-connection" -> {clientConnection.close();}
@@ -64,7 +65,28 @@ public final class SocketConnectionManager extends Thread {
                 teacherHandler = new ClientTeacherHandler();
                 clientRequest = br.readLine();
                 switch (clientRequest) {
-                    case "close-connection" -> {clientConnection.close();}
+                    case "visualizza-sportelli-gestiti" -> {
+                        pw.println(teacherHandler.visualizzaSportelliGestiti(accessRequest.getUsername()));
+                    }
+                    case "crea-sportello" -> {
+                        String dati = br.readLine();
+                        pw.println(teacherHandler.creaSportello(gson.fromJson(dati, Sportello.class)));
+                    }
+                    case "modifica-sportello" -> {
+                        String dati = br.readLine();
+                        pw.println(teacherHandler.modificaSportello(gson.fromJson(dati, Sportello.class)));
+                    }
+                    case "cancella-sportello" -> {
+                        String dati = br.readLine();
+                        pw.println(teacherHandler.cancellaSportello(Long.parseLong(dati), accessRequest.getUsername()));
+                    }
+                    case "aggiorna-dati-personali" -> {
+                        String dati = br.readLine();
+                        pw.println(teacherHandler.aggiornaInformazioniPersonali(gson.fromJson(dati, Persona.class), accessRequest.getUsername()));
+                    } // todo user must log out if email is changed
+                    case "close-connection" -> {
+                        clientConnection.close();
+                    }
                 }
                 
             } else {
