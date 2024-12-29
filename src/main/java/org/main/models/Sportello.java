@@ -16,6 +16,9 @@ public class Sportello {
     @Column(name = "nome_sportello")
     private String nome_sportello;
 
+    @Column(name = "descrizione_sportello")
+    private String descrizione_sportello;
+    
     @Column(name = "max_iscritti")
     private int max_iscritti;
 
@@ -39,7 +42,7 @@ public class Sportello {
 
     public Sportello() {}
 
-    public Sportello(long id_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, String nome_sportello, List<Giorno> giorni) {
+    public Sportello(long id_sportello, String nome_sportello, String descrizione_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, List<Giorno> giorni) {
         this.id_sportello = id_sportello;
         this.docente_responsabile = docente_responsabile;
         this.materia = materia;
@@ -47,11 +50,16 @@ public class Sportello {
         this.num_iscritti = num_iscritti;
         this.max_iscritti = max_iscritti;
         this.nome_sportello = nome_sportello;
+        this.descrizione_sportello = descrizione_sportello;
         this.giorni = giorni;
     }
 
     public String getNome_sportello() {
         return nome_sportello;
+    }
+
+    public String getDescrizione_sportello() {
+        return descrizione_sportello;
     }
 
     public int getMax_iscritti() {
@@ -88,6 +96,10 @@ public class Sportello {
 
     public void setNome_sportello(String nome_sportello) {
         this.nome_sportello = nome_sportello;
+    }
+
+    public void setDescrizione_sportello(String descrizione_sportello) {
+        this.descrizione_sportello = descrizione_sportello;
     }
 
     public void setMax_iscritti(int max_iscritti) {

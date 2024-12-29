@@ -36,7 +36,7 @@ public class PersonaController {
     }
     
     @PostMapping("/login")
-    public ResponseEntity<String> accedi(@RequestBody Persona persona, HttpServletRequest request) {
+    public ResponseEntity<String> accedi(@RequestBody Persona persona) {
         String token = SHA256Encryptor.encrypt(ServerSignatureGenerator.generateSignature());
         personaRepository.aggiungiCodice(token, persona.getEmail());
         return new ResponseEntity<>(token, HttpStatus.CREATED);

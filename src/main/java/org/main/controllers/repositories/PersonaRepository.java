@@ -33,6 +33,13 @@ public interface PersonaRepository extends JpaRepository<Persona, String> {
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END FROM AuthToken t WHERE t.token = :provided_token AND t.user.id = :user AND t.expiresAt > CURRENT_TIMESTAMP")
     Boolean verificaCodice(@Param("provided_token") String provided_token, @Param("user") String user);
 
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM AuthToken a " +
+            "WHERE a.token = :providedToken " +
+            "AND a.userId = :username " +
+            "AND a.expiresAt < CURRENT_TIMESTAMP")
+    boolean verificaCodiceScaduto(@Param("providedToken") String providedToken, @Param("username") String username);
+    
     // Verifica se la persona ha un determinato ruolo
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM Persona p WHERE p.ruolo = :ruolo AND p.email = :user")
     Boolean verificaRuolo(@Param("ruolo") UserIdentity ruolo, @Param("user") String user);

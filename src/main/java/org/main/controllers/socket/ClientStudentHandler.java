@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.main.controllers.socket.wrappers.WrapperSportelliStudente;
 import org.main.models.*;
+import org.main.other.SHA256Encryptor;
+import org.main.other.ServerSignatureGenerator;
 
+import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -18,6 +21,7 @@ public final class ClientStudentHandler {
     private static final String password = "admin";
     private static Connection connection;
     private final Gson gson;
+    private Persona studente;
     
     public ClientStudentHandler() {
         try {
@@ -29,12 +33,32 @@ public final class ClientStudentHandler {
     }
     
     public boolean verificaAutenticita(String username, String password, String hash) {
-        try (Statement statement = connection.createStatement()) {
+        String query = "SELECT * FROM persona WHERE email = ? AND password = ? AND ruolo = \"STUDENT\"";
+        String queryDos = "SELECT TRUE FROM auth_token WHERE token = ? AND user_id = ? AND expires_at > " + LocalDateTime.now();
+        try (
+            PreparedStatement statement = connection.prepareStatement(query);
+            PreparedStatement statementDos = connection.prepareStatement(queryDos);
+        ) {
             P();
-            ResultSet resultSet = statement.executeQuery("SELECT TRUE FROM persona WHERE email = " + username + " AND password = " + password + " AND ruolo = \"STUDENT\"");
+            statement.setString(1, username);
+            statement.setString(2, password);
+            statementDos.setString(1, hash);
+            statementDos.setString(2, username);
+            ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                resultSet = statement.executeQuery("SELECT TRUE FROM auth_token WHERE token = " + hash + " AND user_id = " + username + " AND expires_at > " + LocalDateTime.now());
-                return resultSet.next();
+                ResultSet resultSetDos = statementDos.executeQuery();
+                if (resultSetDos.next()) {
+                    studente = new Persona(
+                            resultSet.getString("email"),
+                            resultSet.getString("classe"),
+                            resultSet.getString("password"),
+                            UserIdentity.STUDENT,
+                            resultSet.getString("cognome"),
+                            resultSet.getString("nome"),
+                            null
+                    );
+                    return true;
+                } else return false;
             } else return false;
         } catch (SQLException e) {
             return false;
@@ -43,6 +67,23 @@ public final class ClientStudentHandler {
         }
     }
 
+    public String getStudente() {
+        return gson.toJson(studente);
+    }
+
+    public String recuperaToken(String username) {
+        String query = "SELECT token FROM auth_token WHERE user_id = ? AND expires_at > " + LocalDateTime.now();
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next())
+                return resultSet.getString("token");
+            else return null;
+        } catch (SQLException se) {
+            throw new RuntimeException(se);
+        }
+    }
+    
     public String getSportelliDisponibili() {
         try (Statement statement = connection.createStatement()) {
             P();
@@ -73,12 +114,13 @@ public final class ClientStudentHandler {
                     Aula aula = new Aula(resultSet.getInt("id"), resultSet.getString("aula_nome"), null);
                     sportello = new Sportello(
                             idSportello,
+                            resultSet.getString("nome_sportello"),
+                            resultSet.getString("descrizione_sportello"),
                             docente,
                             materia,
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            resultSet.getString("nome_sportello"),
                             new LinkedList<>()
                     );
                     sportelloMap.put(idSportello, sportello);
@@ -132,12 +174,13 @@ public final class ClientStudentHandler {
                     Aula aula = new Aula(resultSet.getInt("id"), resultSet.getString("aula_nome"), null);
                     sportello = new Sportello(
                             idSportello,
+                            resultSet.getString("nome_sportello"),
+                            resultSet.getString("descrizione_sportello"),
                             docente,
                             materia,
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            resultSet.getString("nome_sportello"),
                             new LinkedList<>()
                     );
                     sportelloMap.put(idSportello, sportello);
@@ -157,6 +200,65 @@ public final class ClientStudentHandler {
         }
     }
 
+    public String getSportelloById(long id) {
+        try (Statement statement = connection.createStatement()) {
+            P();
+            String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
+                    "FROM SportelloDB s " +
+                    "JOIN persona p ON s.docente_responsabile = p.email " +
+                    "JOIN materia m ON s.materia_id = m.id_materia " +
+                    "JOIN aula a ON s.aula_id = a.id " +
+                    "JOIN giorno g ON s.id_sportello = g.id_sportello " +
+                    "JOIN iscrizione_sportello i ON s.id_sportello = i.id_sportello " +
+                    "WHERE s.id_sportello = ?"; // Usando parametro
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setLong(1, id); // Imposta l'id come parametro
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            Map<Long, Sportello> sportelloMap = new HashMap<>();
+
+            while (resultSet.next()) {
+                long idSportello = resultSet.getLong("id_sportello");
+                Sportello sportello = sportelloMap.get(idSportello);
+                if (sportello == null) {
+                    Persona docente = new Persona(
+                            resultSet.getString("email"),
+                            null,
+                            null,
+                            UserIdentity.TEACHER,
+                            resultSet.getString("docente_nome"),
+                            resultSet.getString("cognome"),
+                            null
+                    );
+                    Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
+                    Aula aula = new Aula(resultSet.getInt("id"), resultSet.getString("aula_nome"), null);
+                    sportello = new Sportello(
+                            idSportello,
+                            resultSet.getString("nome_sportello"),
+                            resultSet.getString("descrizione_sportello"),
+                            docente,
+                            materia,
+                            aula,
+                            resultSet.getInt("num_iscritti"),
+                            resultSet.getInt("max_iscritti"),
+                            new LinkedList<>()
+                    );
+                    sportelloMap.put(idSportello, sportello);
+                }
+                Giorno giorno = new Giorno(
+                        resultSet.getTimestamp("data_inizio").toLocalDateTime(),
+                        resultSet.getTimestamp("data_fine").toLocalDateTime(),
+                        idSportello
+                );
+                sportello.getGiorni().add(giorno);
+            }
+            return gson.toJson(new WrapperSportelliStudente(new LinkedList<>(sportelloMap.values())));
+        } catch (SQLException se) {
+            throw new RuntimeException(se);
+        } finally {
+            V();
+        }
+    }
 
     public String iscriviAlloSportello(long id_sportello, String persona_iscritta) {
         String updateQuery = "UPDATE sportello SET num_iscritti = num_iscritti + 1 WHERE id_sportello = ? AND num_iscritti < max_iscritti";

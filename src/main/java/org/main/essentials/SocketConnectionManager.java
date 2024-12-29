@@ -43,9 +43,15 @@ public final class SocketConnectionManager extends Thread {
             AccessRequest accessRequest = gson.fromJson(clientRequest, AccessRequest.class);
             if (studentHandler.verificaAutenticita(accessRequest.getUsername(), accessRequest.getPassword(), accessRequest.getHash())) {
                 studentHandler = new ClientStudentHandler();
+                pw.println(studentHandler.recuperaToken(accessRequest.getUsername()));
+                pw.println(studentHandler.getStudente());
                 clientRequest = br.readLine();
                 switch (clientRequest) {
                     case "get-sportelli" -> {pw.println(studentHandler.getSportelliDisponibili());}
+                    case "get-sportello" -> {
+                        String id_sportello = br.readLine();
+                        pw.println(studentHandler.getSportelloById(Long.parseLong(id_sportello)));
+                    }
                     case "iscrivi-allo-sportello" -> {
                         String id_sportello = br.readLine();
                         pw.println(studentHandler.iscriviAlloSportello(Long.parseLong(id_sportello), accessRequest.getUsername()));
@@ -63,9 +69,15 @@ public final class SocketConnectionManager extends Thread {
                 }
             } else if (teacherHandler.verificaAutenticita(accessRequest.getUsername(), accessRequest.getPassword(), accessRequest.getHash())) {
                 teacherHandler = new ClientTeacherHandler();
+                pw.println(teacherHandler.recuperaToken(accessRequest.getUsername()));
+                pw.println(teacherHandler.getDocente());
                 clientRequest = br.readLine();
                 switch (clientRequest) {
-                    case "visualizza-sportelli-gestiti" -> {
+                    case "get-sportello" -> {
+                        String id_sportello = br.readLine();
+                        pw.println(studentHandler.getSportelloById(Long.parseLong(id_sportello)));
+                    }
+                    case "get-sportelli-gestiti" -> {
                         pw.println(teacherHandler.visualizzaSportelliGestiti(accessRequest.getUsername()));
                     }
                     case "crea-sportello" -> {

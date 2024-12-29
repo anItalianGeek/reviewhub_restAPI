@@ -6,9 +6,10 @@ public class AccessRequest {
     private String password;
     private String hash;
         
-    public AccessRequest(String username, String password) {
+    public AccessRequest(String username, String password, String hash) {
         this.username = username;
         this.password = password;
+        this.hash = hash;
     }
 
     public String getUsername() {
