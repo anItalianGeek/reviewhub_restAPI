@@ -1,4 +1,4 @@
-package org.main.security;
+package org.main.configuration.security;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,16 +32,16 @@ public class AuthFilter extends OncePerRequestFilter {
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // Ottieni l'header di autenticazione
-        String authToken = request.getHeader("Authorization");
-        String username = request.getParameter("author");
-        String role = getRole(username);
         String path = request.getRequestURI();
-        
-        if (path.equals("/users/login") || path.equals("/test")) {
+        if (path.equals("/users/login") || path.equals("/test") || path.matches("/check/\\w+")) {
             filterChain.doFilter(request, response);
             return;
         }
+
+        // Ottieni header e parametri necessari alla verifica
+        String authToken = request.getHeader("Authorization");
+        String username = request.getParameter("author");
+        String role = getRole(username);
         
         // Verifica la validità del token
         if (authToken == null || !isValidAuthToken(username, authToken.replace("Bearer ", ""))) {
@@ -51,13 +51,7 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         
         Gson gson = new GsonBuilder().create();
-        if (path.equals("/sportello/all") || path.equals("/users/all")) {
-            if (!role.equals("ADMIN")) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.getWriter().write("Forbidden: Insufficient Permissions");
-                return;
-            }
-        } else if (path.matches("/users/\\w+")) {
+        if (path.equals("/sportello/all") || path.equals("/users/all") || path.matches("/users/\\w+") || path.matches("^\\/\\d+\\/remove-subscription\\/[a-zA-Z0-9_]+$")) {
             if (!role.equals("ADMIN")) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Forbidden: Insufficient Permissions");

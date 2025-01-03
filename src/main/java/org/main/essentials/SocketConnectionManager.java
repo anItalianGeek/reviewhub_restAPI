@@ -75,7 +75,7 @@ public final class SocketConnectionManager extends Thread {
                 switch (clientRequest) {
                     case "get-sportello" -> {
                         String id_sportello = br.readLine();
-                        pw.println(studentHandler.getSportelloById(Long.parseLong(id_sportello)));
+                        pw.println(teacherHandler.getSportelloById(Long.parseLong(id_sportello)));
                     }
                     case "get-sportelli-gestiti" -> {
                         pw.println(teacherHandler.visualizzaSportelliGestiti(accessRequest.getUsername()));

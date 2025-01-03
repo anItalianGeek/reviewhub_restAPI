@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface PersonaRepository extends JpaRepository<Persona, String> {
 
+    // Verifica se una email è disponibile
+    @Query(value = "SELECT TRUE FROM persona WHERE email = :email", nativeQuery = true)
+    Boolean verificaMailDisponibile(@Param("email") String email);
+    
     // Aggiungi una nuova persona
     @Transactional
     @Modifying

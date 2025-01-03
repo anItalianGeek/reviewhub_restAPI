@@ -4,6 +4,7 @@ import org.main.essentials.SocketConnectionManager;
 import org.main.essentials.Shell;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -11,6 +12,7 @@ import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 
 @SpringBootApplication
+@EnableAsync
 public class Main {
 
     public static void main(String[] args) throws IOException {

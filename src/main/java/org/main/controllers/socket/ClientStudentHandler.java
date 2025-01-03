@@ -2,34 +2,24 @@ package org.main.controllers.socket;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.main.controllers.socket.wrappers.WrapperSportelliStudente;
+import org.main.models.wrappers.WrapperSportelliStudente;
 import org.main.models.*;
-import org.main.other.SHA256Encryptor;
-import org.main.other.ServerSignatureGenerator;
-
-import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Semaphore;
+
+import static org.main.controllers.socket.DatabaseContext.connection;
+import static org.main.controllers.socket.DatabaseContext.mutex;
 
 public final class ClientStudentHandler {
     
-    private static final Semaphore mutex = new Semaphore(1);
-    private static final String jdbcUrl = "jdbc:mysql://localhost:3306/reviewhub_db?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true";
-    private static final String username = "admin";
-    private static final String password = "admin";
-    private static Connection connection;
     private final Gson gson;
     private Persona studente;
+    private boolean authenticated;
     
     public ClientStudentHandler() {
-        try {
-            connection = DriverManager.getConnection(jdbcUrl, username, password);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
         gson = new GsonBuilder().create();
+        authenticated = false;
     }
     
     public boolean verificaAutenticita(String username, String password, String hash) {
@@ -57,6 +47,7 @@ public final class ClientStudentHandler {
                             resultSet.getString("nome"),
                             null
                     );
+                    authenticated = true;
                     return true;
                 } else return false;
             } else return false;
@@ -85,6 +76,8 @@ public final class ClientStudentHandler {
     }
     
     public String getSportelliDisponibili() {
+        if (!authenticated) return null;
+        
         try (Statement statement = connection.createStatement()) {
             P();
             String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
@@ -141,6 +134,8 @@ public final class ClientStudentHandler {
     }
 
     public String getSportelliIscritti(String username) {
+        if (!authenticated) return null;
+        
         try (Statement statement = connection.createStatement()) {
             P();
             String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
@@ -201,6 +196,8 @@ public final class ClientStudentHandler {
     }
 
     public String getSportelloById(long id) {
+        if (!authenticated) return null;
+        
         try (Statement statement = connection.createStatement()) {
             P();
             String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
@@ -261,6 +258,8 @@ public final class ClientStudentHandler {
     }
 
     public String iscriviAlloSportello(long id_sportello, String persona_iscritta) {
+        if (!authenticated) return "failure";
+        
         String updateQuery = "UPDATE sportello SET num_iscritti = num_iscritti + 1 WHERE id_sportello = ? AND num_iscritti < max_iscritti";
         String insertQuery = "INSERT INTO iscrizione_sportello (persona_iscritta, id_sportello) VALUES (?, ?)";
         try (
@@ -292,6 +291,8 @@ public final class ClientStudentHandler {
     }
     
     public String disiscriviDalloSportello(long id_sportello, String persona_iscritta) {
+        if (!authenticated) return "failure";
+        
         String updateQuery = "UPDATE sportello SET num_iscritti = num_iscritti - 1 WHERE id_sportello = ?";
         String deleteQuery = "DELETE FROM iscrizione_sportello WHERE id_sportello = ? AND persona_iscritta = ?";
         try (
@@ -323,6 +324,8 @@ public final class ClientStudentHandler {
     }
     
     public String aggiornaInformazioniPersonali(Persona informazioniPersona, String oldEmail) {
+        if (!authenticated) return "failure";
+        
         try (
             PreparedStatement statement = connection.prepareStatement("SELECT nome, cognome, classe, password, email FROM persona WHERE email = ?");
             PreparedStatement updateStatement = connection.prepareStatement("UPDATE persona SET ? = ? WHERE email = ?")
@@ -367,16 +370,22 @@ public final class ClientStudentHandler {
             V();
         }
     }
-    
+
     private void P() {
         try {
             mutex.acquire();
-        } catch (InterruptedException e) {
+            connection.setAutoCommit(false);
+        } catch (InterruptedException | SQLException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
     private void V() {
+        try {
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         mutex.release();
     }
     

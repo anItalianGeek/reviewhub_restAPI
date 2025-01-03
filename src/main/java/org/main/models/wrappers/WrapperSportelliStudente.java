@@ -1,4 +1,4 @@
-package org.main.controllers.socket.wrappers;
+package org.main.models.wrappers;
 
 import org.main.models.Sportello;
 

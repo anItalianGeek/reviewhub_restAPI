@@ -2,41 +2,26 @@ package org.main.controllers.socket;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mysql.cj.xdevapi.UpdateStatement;
-import org.main.controllers.socket.wrappers.Iscrizione;
-import org.main.controllers.socket.wrappers.WrapperSportelliDocente;
-import org.main.controllers.socket.wrappers.WrapperSportelliStudente;
+import org.main.models.wrappers.Iscrizione;
+import org.main.models.wrappers.WrapperSportelliDocente;
 import org.main.models.*;
-import org.main.other.SHA256Encryptor;
-import org.main.other.ServerSignatureGenerator;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.Semaphore;
+import java.util.*;
+
+import static org.main.controllers.socket.DatabaseContext.connection;
+import static org.main.controllers.socket.DatabaseContext.mutex;
 
 public final class ClientTeacherHandler {
-
-    private static final Semaphore mutex = new Semaphore(1);
-    private static final String jdbcUrl = "jdbc:mysql://localhost:3306/reviewhub_db?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true";
-    private static final String username = "admin";
-    private static final String password = "admin";
-    private static Connection connection;
-    private static Statement statement;
+    
     private final Gson gson;
     private Persona docente;
+    private boolean authenticated;
 
     public ClientTeacherHandler() {
-        try {
-            connection = DriverManager.getConnection(jdbcUrl, username, password);
-            statement = connection.createStatement();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
         gson = new GsonBuilder().create();
+        authenticated = false;
     }
 
     public boolean verificaAutenticita(String username, String password, String hash) {
@@ -64,6 +49,7 @@ public final class ClientTeacherHandler {
                             resultSet.getString("nome"),
                             null
                     );
+                    authenticated = true;
                     return true;
                 } else return false;
             } else return false;
@@ -79,6 +65,8 @@ public final class ClientTeacherHandler {
     }
 
     public String recuperaToken(String username) {
+        if (!authenticated) return null;
+
         String query = "SELECT token FROM auth_token WHERE user_id = ? AND expires_at > " + LocalDateTime.now();
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, username);
@@ -90,21 +78,23 @@ public final class ClientTeacherHandler {
             throw new RuntimeException(se);
         }
     }
-    
+
     public String visualizzaSportelliGestiti(String username) {
+        if (!authenticated) return null;
+
         String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
-                    "FROM SportelloDB s " +
-                    "JOIN persona p ON s.docente_responsabile = p.email " +
-                    "JOIN materia m ON s.materia_id = m.id_materia " +
-                    "JOIN aula a ON s.aula_id = a.id " +
-                    "JOIN giorno g ON s.id_sportello = g.id_sportello " +
-                    "WHERE s.docente_responsabile = ?";
+                "FROM SportelloDB s " +
+                "JOIN persona p ON s.docente_responsabile = p.email " +
+                "JOIN materia m ON s.materia_id = m.id_materia " +
+                "JOIN aula a ON s.aula_id = a.id " +
+                "JOIN giorno g ON s.id_sportello = g.id_sportello " +
+                "WHERE s.docente_responsabile = ?";
         String queryDos = "SELECT p.nome, p.cognome, p.classe, p.email FROM persona as p" +
-                    "JOIN iscrizione_sportello AS i ON i.persona_iscritta = p.email" +
-                    "WHERE i.id_sportello = ?";
+                "JOIN iscrizione_sportello AS i ON i.persona_iscritta = p.email" +
+                "WHERE i.id_sportello = ?";
         try (
-            PreparedStatement statement = connection.prepareStatement(query);
-            PreparedStatement statementDos = connection.prepareStatement(queryDos);       
+                PreparedStatement statement = connection.prepareStatement(query);
+                PreparedStatement statementDos = connection.prepareStatement(queryDos);
         ) {
             P();
             statement.setString(1, username);
@@ -162,21 +152,29 @@ public final class ClientTeacherHandler {
     }
 
     public String getSportelloById(long id) {
-        try (Statement statement = connection.createStatement()) {
+        if (!authenticated) return null;
+
+        String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
+                "FROM SportelloDB s " +
+                "JOIN persona p ON s.docente_responsabile = p.email " +
+                "JOIN materia m ON s.materia_id = m.id_materia " +
+                "JOIN aula a ON s.aula_id = a.id " +
+                "JOIN giorno g ON s.id_sportello = g.id_sportello " +
+                "JOIN iscrizione_sportello i ON s.id_sportello = i.id_sportello " +
+                "WHERE s.id_sportello = ?"; // Usando parametro
+        String queryDos = "SELECT p.nome, p.cognome, p.classe, p.email FROM persona as p" +
+                "JOIN iscrizione_sportello AS i ON i.persona_iscritta = p.email" +
+                "WHERE i.id_sportello = ?";
+        try (
+                PreparedStatement selectStatement = connection.prepareStatement(query);
+                PreparedStatement selectIscrittiStatement = connection.prepareStatement(queryDos);
+        ) {
             P();
-            String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
-                    "FROM SportelloDB s " +
-                    "JOIN persona p ON s.docente_responsabile = p.email " +
-                    "JOIN materia m ON s.materia_id = m.id_materia " +
-                    "JOIN aula a ON s.aula_id = a.id " +
-                    "JOIN giorno g ON s.id_sportello = g.id_sportello " +
-                    "JOIN iscrizione_sportello i ON s.id_sportello = i.id_sportello " +
-                    "WHERE s.id_sportello = ?"; // Usando parametro
-            PreparedStatement preparedStatement = connection.prepareStatement(query);
-            preparedStatement.setLong(1, id); // Imposta l'id come parametro
-            ResultSet resultSet = preparedStatement.executeQuery();
+            selectStatement.setLong(1, id); // Imposta l'id come parametro
+            ResultSet resultSet = selectStatement.executeQuery();
 
             Map<Long, Sportello> sportelloMap = new HashMap<>();
+            LinkedList<Iscrizione> iscritti = new LinkedList<>();
 
             while (resultSet.next()) {
                 long idSportello = resultSet.getLong("id_sportello");
@@ -205,7 +203,15 @@ public final class ClientTeacherHandler {
                             new LinkedList<>()
                     );
                     sportelloMap.put(idSportello, sportello);
+
+                    selectIscrittiStatement.setLong(1, idSportello);
+                    ResultSet iscrittiSet = selectIscrittiStatement.executeQuery();
+                    Iscrizione iscrittiSportello = new Iscrizione(idSportello, new LinkedList<>());
+                    while (iscrittiSet.next())
+                        iscrittiSportello.getIscritti().add(iscrittiSet.getString("nome") + " " + iscrittiSet.getString("cognome") + ", " + iscrittiSet.getString("classe") + " (" + iscrittiSet.getString("email") + ")");
+                    iscritti.add(iscrittiSportello);
                 }
+
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
@@ -213,89 +219,205 @@ public final class ClientTeacherHandler {
                 );
                 sportello.getGiorni().add(giorno);
             }
-            return gson.toJson(new WrapperSportelliStudente(new LinkedList<>(sportelloMap.values())));
+            return gson.toJson(new WrapperSportelliDocente(new LinkedList<>(sportelloMap.values()), iscritti));
         } catch (SQLException se) {
             throw new RuntimeException(se);
         } finally {
             V();
         }
     }
-    
+
     public String creaSportello(Sportello datiNuovoSportello) {
-    String query = "INSERT INTO sportello (nome_sportello, num_iscritti, max_iscritti, docente_responsabile, aula_id, materia_id)" +
-                "VALUES (?, 0, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
+        if (!authenticated) return "failure";
+
+        String querySportello = "INSERT INTO sportello (nome_sportello, num_iscritti, max_iscritti, docente_responsabile, aula_id, materia_id)" +
+                " VALUES (?, 0, ?, ?, ?, ?)";
+        String queryGiorni = "INSERT INTO giorno VALUES (?, ?, ?)";
+
+        try (
+                PreparedStatement sportelloStatement = connection.prepareStatement(querySportello, Statement.RETURN_GENERATED_KEYS);
+                PreparedStatement giorniStatement = connection.prepareStatement(queryGiorni)
+        ) {
             P();
-            statement.setString(1, datiNuovoSportello.getNome_sportello());
-            statement.setLong(2, datiNuovoSportello.getMax_iscritti());
-            statement.setString(3, datiNuovoSportello.getDocente_responsabile().getEmail());
-            statement.setInt(4, datiNuovoSportello.getAula().getId());
-            statement.setInt(5, datiNuovoSportello.getMateria().getId());
-            
-            int righeModificate = statement.executeUpdate();
-            if (righeModificate == 0) return "failure";
-            else return "success";
+            // Imposta i parametri della query
+            sportelloStatement.setString(1, datiNuovoSportello.getNome_sportello());
+            sportelloStatement.setLong(2, datiNuovoSportello.getMax_iscritti());
+            sportelloStatement.setString(3, datiNuovoSportello.getDocente_responsabile().getEmail());
+            sportelloStatement.setInt(4, datiNuovoSportello.getAula().getId());
+            sportelloStatement.setInt(5, datiNuovoSportello.getMateria().getId());
+
+            int righeModificate = sportelloStatement.executeUpdate();
+
+            if (righeModificate == 0) {
+                return "failure";
+            }
+
+            // Recupera l'ID generato
+            try (ResultSet generatedKeys = sportelloStatement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    long idSportello = generatedKeys.getLong(1);
+                    datiNuovoSportello.setId_sportello(idSportello); // Imposta l'ID nello sportello
+
+                    // Inserisci i giorni associati
+                    for (Giorno giorno : datiNuovoSportello.getGiorni()) {
+                        giorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getData_inizio()));
+                        giorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getData_fine()));
+                        giorniStatement.setLong(3, idSportello);
+                        giorniStatement.executeUpdate();
+                    }
+                    connection.commit();
+                    return "success";
+                } else {
+                    connection.rollback();
+                    return "failure";
+                }
+            }
         } catch (SQLException se) {
-            throw new RuntimeException(se);
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            return "failure";
         } finally {
             V();
         }
     }
-    
+
     public String modificaSportello(Sportello datiNuovoSportello) {
+        if (!authenticated) return "failure";
+
         String query = "SELECT * FROM sportello WHERE docente_responsabile = ? AND id_sportello = ?";
-        String updateQuery = "UPDATE sportello SET ? = ? WHERE id_sportello = ?";
+        String updateQueryTemplate = "UPDATE sportello SET %s WHERE id_sportello = ?";
+        String recuperaGiorniQuery = "SELECT * FROM giorno WHERE id_sportello = ?";
+        String cancellaVecchiGiorniQuery = "DELETE FROM giorno WHERE id_sportello = ?";
+        String inserisciNuoviGiorni = "INSERT INTO giorno VALUES (?, ?, ?)";
+
         try (
-            PreparedStatement statement = connection.prepareStatement(query);
-            PreparedStatement updateStatement = connection.prepareStatement(updateQuery)
+                PreparedStatement statement = connection.prepareStatement(query);
+                PreparedStatement recuperaGiorni = connection.prepareStatement(recuperaGiorniQuery);
+                PreparedStatement cancellaGiorniStatement = connection.prepareStatement(cancellaVecchiGiorniQuery);
+                PreparedStatement inserisciGiorniStatement = connection.prepareStatement(inserisciNuoviGiorni)
         ) {
             P();
             statement.setString(1, datiNuovoSportello.getDocente_responsabile().getEmail());
             statement.setLong(2, datiNuovoSportello.getId_sportello());
-            updateStatement.setLong(3, datiNuovoSportello.getId_sportello());
-            
+
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
+                long idSportello = resultSet.getLong("id_sportello");
+
+                // StringBuilder per aggiornamenti dinamici
+                StringBuilder updateQuery = new StringBuilder();
+                List<Object> params = new ArrayList<>();
+
+                // Controllo e costruzione della query per 'nome_sportello'
                 if (!datiNuovoSportello.getNome_sportello().equals(resultSet.getString("nome_sportello"))) {
-                    updateStatement.setString(1, "nome_sportello");
-                    updateStatement.setString(2, datiNuovoSportello.getNome_sportello());
-                    updateStatement.executeUpdate();
+                    updateQuery.append("nome_sportello = ?, ");
+                    params.add(datiNuovoSportello.getNome_sportello());
                 }
-                if (datiNuovoSportello.getMax_iscritti() != resultSet.getInt("max_iscritti")) {
-                    updateStatement.setString(1, "max_iscritti");
-                    updateStatement.setInt(2, datiNuovoSportello.getMax_iscritti());
-                    updateStatement.executeUpdate();
-                }
+
+                // Controllo e costruzione della query per 'aula_id'
                 if (datiNuovoSportello.getAula().getId() != resultSet.getInt("aula_id")) {
-                    updateStatement.setString(1, "aula_id");
-                    updateStatement.setInt(2, datiNuovoSportello.getAula().getId());
-                    updateStatement.executeUpdate();
+                    updateQuery.append("aula_id = ?, ");
+                    params.add(datiNuovoSportello.getAula().getId());
                 }
+
+                // Controllo e costruzione della query per 'materia_id'
                 if (datiNuovoSportello.getMateria().getId() != resultSet.getInt("materia_id")) {
-                    updateStatement.setString(1, "materia_id");
-                    updateStatement.setInt(2, datiNuovoSportello.getMateria().getId());
-                    updateStatement.executeUpdate();
+                    updateQuery.append("materia_id = ?, ");
+                    params.add(datiNuovoSportello.getMateria().getId());
                 }
-                
+
+                // Controllo e costruzione della query per 'max_iscritti'
+                if (datiNuovoSportello.getMax_iscritti() != resultSet.getInt("max_iscritti")) {
+                    if (datiNuovoSportello.getMax_iscritti() < resultSet.getInt("num_iscritti"))
+                        return "failure"; // non è possibile ridurre il numero massimo di iscritti
+                    updateQuery.append("max_iscritti = ?, ");
+                    params.add(datiNuovoSportello.getMax_iscritti());
+                }
+
+                // Se ci sono stati aggiornamenti, esegui la query
+                if (updateQuery.length() > 0) {
+                    // Rimuovi l'ultima virgola e spazio
+                    updateQuery.setLength(updateQuery.length() - 2);
+                    updateQuery.append(" WHERE id_sportello = ?");
+                    params.add(idSportello);
+
+                    // Crea un nuovo PreparedStatement per ogni aggiornamento
+                    PreparedStatement newUpdateStatement = connection.prepareStatement(String.format(updateQueryTemplate, updateQuery.toString()));
+                    for (int i = 0; i < params.size(); i++) {
+                        newUpdateStatement.setObject(i + 1, params.get(i));
+                    }
+                    newUpdateStatement.executeUpdate();
+                }
+
+                // Recupero e ordinamento dei giorni
+                recuperaGiorni.setLong(1, idSportello);
+                resultSet = recuperaGiorni.executeQuery();
+                LinkedList<Giorno> giorniVecchi = new LinkedList<>();
+                while (resultSet.next()) {
+                    Giorno giorno = new Giorno(
+                            resultSet.getTimestamp("data_inizio").toLocalDateTime(),
+                            resultSet.getTimestamp("data_fine").toLocalDateTime(),
+                            idSportello
+                    );
+                    giorniVecchi.add(giorno);
+                }
+                giorniVecchi.sort((a, b) -> a.getData_inizio().compareTo(b.getData_inizio()));
+                datiNuovoSportello.getGiorni().sort((a, b) -> a.getData_inizio().compareTo(b.getData_inizio()));
+
+                // Se i giorni sono diversi, cancella e reinserisci
+                if (!giorniVecchi.equals(datiNuovoSportello.getGiorni())) {
+                    cancellaGiorniStatement.setLong(1, idSportello);
+                    cancellaGiorniStatement.executeUpdate();
+
+                    inserisciGiorniStatement.setLong(3, idSportello);
+                    for (Giorno giorno : datiNuovoSportello.getGiorni()) {
+                        inserisciGiorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getData_fine()));
+                        inserisciGiorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getData_inizio()));
+                        inserisciGiorniStatement.executeUpdate();
+                    }
+                }
+
+                // Commit della transazione
+                connection.commit();
                 return "success";
-            } else return "failure";
+            } else {
+                connection.rollback();
+                return "failure";
+            }
         } catch (SQLException se) {
-            throw new RuntimeException(se);    
+            try {
+                // Rollback in caso di errore
+                connection.rollback();
+            } catch (SQLException e) {
+                throw new RuntimeException("Errore durante il rollback", e);
+            }
+            throw new RuntimeException("Errore durante la modifica dello sportello", se);
         } finally {
             V();
         }
-    } 
-    
+    }
+
+
     public String cancellaSportello(long id, String username) {
-        String query = "DELETE FROM sportello WHERE id_sportello = ? AND docente_responsabile = ?"; 
+        if (!authenticated) return "failure";
+
+        String query = "DELETE FROM sportello WHERE id_sportello = ? AND docente_responsabile = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             P();
             statement.setLong(1, id);
             statement.setString(2, username);
-            
+
             int righeModificate = statement.executeUpdate();
-            if (righeModificate == 0) return "failure";
-            else return "success";
+            if (righeModificate == 0) {
+                connection.rollback();
+                return "failure";
+            } else {
+                connection.commit();
+                return "success";
+            }
         } catch (SQLException se) {
             throw new RuntimeException(se);
         } finally {
@@ -304,6 +426,8 @@ public final class ClientTeacherHandler {
     }
 
     public String aggiornaInformazioniPersonali(Persona informazioniPersona, String oldEmail) {
+        if (!authenticated) return "failure";
+
         try (
                 PreparedStatement statement = connection.prepareStatement("SELECT nome, cognome, classe, password, email FROM persona WHERE email = ?");
                 PreparedStatement updateStatement = connection.prepareStatement("UPDATE persona SET ? = ? WHERE email = ?");
@@ -344,30 +468,40 @@ public final class ClientTeacherHandler {
                         sportelliUpdateStatement.setLong(2, sportelliDaAggiornare.getLong("id_sportello"));
                         sportelliUpdateStatement.executeUpdate();
                     }
-                    
+
                     updateStatement.setString(1, "email");
                     updateStatement.setString(2, informazioniPersona.getEmail());
                     updateStatement.executeUpdate();
                 }
 
+                connection.commit();
                 return "success";
-            } else return "failure";
+            } else {
+                connection.rollback();
+                return "failure";
+            }
         } catch (SQLException se) {
             throw new RuntimeException(se);
         } finally {
             V();
         }
     }
-    
+
     private void P() {
         try {
             mutex.acquire();
-        } catch (InterruptedException e) {
+            connection.setAutoCommit(false);
+        } catch (InterruptedException | SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void V() {
+        try {
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         mutex.release();
     }
 

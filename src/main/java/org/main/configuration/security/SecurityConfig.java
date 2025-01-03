@@ -1,4 +1,4 @@
-package org.main.security;
+package org.main.configuration.security;
 
 import org.main.controllers.repositories.PersonaRepository;
 import org.springframework.beans.factory.annotation.Autowired;

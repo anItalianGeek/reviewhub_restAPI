@@ -1,5 +1,6 @@
 package org.main.controllers.repositories;
 
+import org.main.models.Persona;
 import org.main.models.Sportello;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,6 +21,13 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
     // Recupera gli sportelli per un docente specifico tramite email
     @Query("SELECT s FROM Sportello s WHERE s.docenteResponsabile = :emailDocente")
     List<Sportello> getSportelliByDocente(@Param("emailDocente") String emailDocente);
+
+    // Recupera tutti gli iscritti di uno sportello
+    @Query("SELECT p " +
+            "FROM Persona p " +
+            "JOIN IscrizioneSportello i ON i.personaIscritta.email = p.email " +
+            "WHERE i.sportello.id = :idSportello")
+    List<Persona> getIscrittiNelloSportello(@Param("idSportello") Long idSportello);
 
     // Recupera gli sportelli a cui una persona è iscritta
     @Query("SELECT s FROM Sportello s JOIN s.iscrizioni i WHERE i.persona.email = :username")
