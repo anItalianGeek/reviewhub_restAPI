@@ -45,6 +45,7 @@ public final class ClientStudentHandler {
                             UserIdentity.STUDENT,
                             resultSet.getString("cognome"),
                             resultSet.getString("nome"),
+                            null,
                             null
                     );
                     authenticated = true;
@@ -101,6 +102,7 @@ public final class ClientStudentHandler {
                             UserIdentity.TEACHER,
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -121,7 +123,7 @@ public final class ClientStudentHandler {
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        idSportello
+                        sportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -163,6 +165,7 @@ public final class ClientStudentHandler {
                             UserIdentity.TEACHER,
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -183,7 +186,7 @@ public final class ClientStudentHandler {
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        idSportello
+                        sportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -225,6 +228,7 @@ public final class ClientStudentHandler {
                             UserIdentity.TEACHER,
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -245,7 +249,7 @@ public final class ClientStudentHandler {
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        idSportello
+                        sportello
                 );
                 sportello.getGiorni().add(giorno);
             }

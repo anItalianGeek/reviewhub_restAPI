@@ -1,7 +1,6 @@
 package org.main.models;
 
 import jakarta.persistence.*;
-
 import java.util.List;
 
 @Entity
@@ -28,12 +27,18 @@ public class Persona {
     @Column(name = "classe")
     private String classe;
 
+    @OneToMany(mappedBy = "user")
+    private List<AuthToken> authTokens;
+
     @OneToMany(mappedBy = "docente_responsabile")
     private List<Sportello> sportelli;
 
+    @OneToMany(mappedBy = "persona")
+    private List<IscrizioneSportello> iscrizioni;
+
     public Persona() {}
 
-    public Persona(String email, String classe, String password, UserIdentity ruolo, String cognome, String nome, List<Sportello> sportelli) {
+    public Persona(String email, String classe, String password, UserIdentity ruolo, String cognome, String nome, List<Sportello> sportelli, List<AuthToken> authTokens) {
         this.email = email;
         this.classe = classe;
         this.password = password;
@@ -41,6 +46,7 @@ public class Persona {
         this.cognome = cognome;
         this.nome = nome;
         this.sportelli = sportelli;
+        this.authTokens = authTokens;
     }
 
     public String getEmail() {
@@ -98,4 +104,13 @@ public class Persona {
     public void setSportelli(List<Sportello> sportelli) {
         this.sportelli = sportelli;
     }
+
+    public List<AuthToken> getAuthTokens() {
+        return authTokens;
+    }
+
+    public void setAuthTokens(List<AuthToken> authTokens) {
+        this.authTokens = authTokens;
+    }
+    
 }

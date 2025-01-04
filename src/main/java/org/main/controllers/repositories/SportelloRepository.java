@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository
 public interface SportelloRepository extends JpaRepository<Sportello, Long> {
 
     // Recupera tutti gli sportelli con num_iscritti < max_iscritti

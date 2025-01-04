@@ -1,6 +1,8 @@
 package org.main.controllers.rest;
 
+import org.main.controllers.repositories.AuthTokenRepository;
 import org.main.controllers.repositories.PersonaRepository;
+import org.main.models.AuthToken;
 import org.main.models.Persona;
 import org.main.models.UserIdentity;
 import org.main.other.SHA256Encryptor;
@@ -21,13 +23,15 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/users")
 public class PersonaController {
-    
+
     private static final String DOMAIN = "@chilesotti.it";
     private final PersonaRepository personaRepository;
+    private final AuthTokenRepository authTokenRepository;
 
     @Autowired
-    public PersonaController(PersonaRepository personaRepository) {
+    public PersonaController(PersonaRepository personaRepository, AuthTokenRepository authTokenRepository) {
         this.personaRepository = personaRepository;
+        this.authTokenRepository = authTokenRepository;
     }
 
     @Async("requestHandler")
@@ -37,45 +41,52 @@ public class PersonaController {
             Boolean databaseResponse = personaRepository.verificaMailDisponibile(requestedEmail);
             if (databaseResponse == null || !databaseResponse)
                 return new ResponseEntity<>(false, HttpStatus.OK);
-            else 
+            else
                 return new ResponseEntity<>(true, HttpStatus.OK);
         });
     }
-    
+
     @Async("requestHandler")
     @GetMapping("/all")
     public CompletableFuture<ResponseEntity<List<Persona>>> getTuttePersone() {
         return CompletableFuture.supplyAsync(() -> new ResponseEntity<>(personaRepository.findAll(), HttpStatus.OK));
     }
-    
+
     @Async("requestHandler")
     @GetMapping("/{username}")
     public CompletableFuture<ResponseEntity<Persona>> getPersonaById(@PathVariable String username) {
         return CompletableFuture.supplyAsync(() -> new ResponseEntity<>(personaRepository.findById(username + DOMAIN).orElse(null), HttpStatus.OK));
     }
-    
+
     @Async("requestHandler")
     @PostMapping("/login")
     public CompletableFuture<ResponseEntity<AccessData>> accedi(@RequestBody Persona persona) {
         return CompletableFuture.supplyAsync(() -> {
             String token = SHA256Encryptor.encrypt(ServerSignatureGenerator.generateSignature());
-            personaRepository.aggiungiCodice(token, persona.getEmail());
+            authTokenRepository.save(new AuthToken(token, persona));
             return new ResponseEntity<>(new AccessData(token, personaRepository.ottieniRuolo(persona.getEmail())), HttpStatus.CREATED);
         });
     }
-    
+
     @Async("requestHandler")
     @PostMapping("/create")
     public CompletableFuture<ResponseEntity<String>> aggiungiPersona(@RequestBody Persona datiNuovaPersona) {
         return CompletableFuture.supplyAsync(() -> {
-            int operationResult = personaRepository.aggiungiNuovaPersona(datiNuovaPersona.getEmail(), datiNuovaPersona.getNome(), datiNuovaPersona.getCognome(), datiNuovaPersona.getPassword(), datiNuovaPersona.getRuolo(), datiNuovaPersona.getClasse());
-            if (operationResult == 0)
-                return new ResponseEntity<>("Operazione fallita.", HttpStatus.INTERNAL_SERVER_ERROR);
-            else
-                return new ResponseEntity<>("Operazione compiuta con successo.", HttpStatus.CREATED);
+            personaRepository.save(
+                    new Persona(
+                            datiNuovaPersona.getEmail(),
+                            datiNuovaPersona.getClasse(),
+                            datiNuovaPersona.getPassword(),
+                            datiNuovaPersona.getRuolo(),
+                            datiNuovaPersona.getCognome(),
+                            datiNuovaPersona.getNome(),
+                            null,
+                            null
+                    ));
+            return new ResponseEntity<>("Operazione compiuta con successo.", HttpStatus.CREATED);
         });
     }
-    
+
     @Async("requestHandler")
     @PutMapping("/modify/{user}")
     @Transactional
@@ -87,15 +98,18 @@ public class PersonaController {
                 return null;
             else {
                 if (!persona.getNome().equals(datiPersona.getNome())) persona.setNome(datiPersona.getNome());
-                if (!persona.getCognome().equals(datiPersona.getCognome())) persona.setCognome(datiPersona.getCognome());
-                if (!persona.getPassword().equals(datiPersona.getPassword())) persona.setPassword(datiPersona.getPassword());
+                if (!persona.getCognome().equals(datiPersona.getCognome()))
+                    persona.setCognome(datiPersona.getCognome());
+                if (!persona.getPassword().equals(datiPersona.getPassword()))
+                    persona.setPassword(datiPersona.getPassword());
                 if (!persona.getClasse().equals(datiPersona.getClasse())) persona.setClasse(datiPersona.getClasse());
-                if (!persona.getSportelli().equals(datiPersona.getSportelli())) persona.setSportelli(datiPersona.getSportelli());
+                if (!persona.getSportelli().equals(datiPersona.getSportelli()))
+                    persona.setSportelli(datiPersona.getSportelli());
                 return new ResponseEntity<>(personaRepository.save(persona), HttpStatus.ACCEPTED);
             }
         });
     }
-    
+
     @Async("requestHandler")
     @DeleteMapping("/remove/{user}")
     public CompletableFuture<ResponseEntity<String>> cancellaPersona(@PathVariable String user) {
@@ -119,10 +133,10 @@ public class PersonaController {
 }
 
 class AccessData {
-    
+
     private String token;
     private UserIdentity ruolo;
-    
+
     public AccessData(String token, UserIdentity ruolo) {
         this.ruolo = ruolo;
         this.token = token;
@@ -143,5 +157,5 @@ class AccessData {
     public void setRuolo(UserIdentity ruolo) {
         this.ruolo = ruolo;
     }
-    
+
 }

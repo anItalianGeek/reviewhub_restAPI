@@ -5,9 +5,11 @@ import com.google.gson.GsonBuilder;
 import org.main.controllers.repositories.PersonaRepository;
 import org.main.models.Persona;
 import org.main.models.Sportello;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -18,16 +20,27 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 public class AuthFilter extends OncePerRequestFilter {
-
-    private static final String DOMAIN = "@chilesotti.it";
-    private PersonaRepository personaRepository;
     
-    public AuthFilter(PersonaRepository personaRepository) {
-        this.personaRepository = personaRepository;
+    private static final String jdbcUrl = "jdbc:mysql://localhost:3306/reviewhub_db?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true";
+    private static final String username = "admin";
+    private static final String password = "admin";
+    private static Connection connection;
+    private static final Semaphore mutex = new Semaphore(1);
+    private static final String DOMAIN = "@chilesotti.it";
+    
+    public AuthFilter() {
+        try {
+            connection = DriverManager.getConnection(jdbcUrl, username, password);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
     
     @Override
@@ -101,11 +114,32 @@ public class AuthFilter extends OncePerRequestFilter {
 
     // Logica per verificare la validità del token
     private boolean isValidAuthToken(String username, String token) {
-        return personaRepository.verificaCodice(username + DOMAIN, token);
+        try {
+            mutex.acquire();
+            PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM auth_token WHERE user_id = ? AND expires_at > ?");
+            statement.setString(1, username + DOMAIN);
+            statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+            return statement.executeQuery().next();
+        } catch (InterruptedException | SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            mutex.release();
+        }
     }
     
     private String getRole(String username){
-        return String.valueOf(personaRepository.ottieniRuolo(username + DOMAIN));
+        try {
+            mutex.acquire();
+            PreparedStatement statement = connection.prepareStatement("SELECT ruolo FROM persona WHERE email = ?");
+            statement.setString(1, username + DOMAIN);
+            ResultSet resultSet = statement.executeQuery();
+            resultSet.next();
+            return resultSet.getString("ruolo");
+        } catch (InterruptedException | SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            mutex.release();
+        }
     }
 
     private String getRequestBody(HttpServletRequest request) throws IOException {

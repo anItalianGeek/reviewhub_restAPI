@@ -22,7 +22,7 @@ public class Sportello {
     @Column(name = "max_iscritti")
     private int max_iscritti;
 
-    @Column(name = "num_ipscritti")
+    @Column(name = "num_iscritti")
     private int num_iscritti;
 
     @ManyToOne
@@ -36,6 +36,9 @@ public class Sportello {
     @ManyToOne
     @JoinColumn(name = "docente_responsabile")
     private Persona docente_responsabile;
+
+    @OneToMany(mappedBy = "sportello")
+    private List<IscrizioneSportello> iscrizioni;
 
     @OneToMany(mappedBy = "sportello")
     private List<Giorno> giorni;

@@ -13,13 +13,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-    private PersonaRepository personaRepository;
-    
-    @Autowired
-    public SecurityConfig(PersonaRepository personaRepository) {
-        this.personaRepository = personaRepository;
-    }
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -28,14 +21,14 @@ public class SecurityConfig {
                 .requestMatchers("/test/**").authenticated()  // Protegge gli endpoint "/test/**"
                 .anyRequest().permitAll()  // Permette tutte le altre richieste
                 .and()
-                .addFilterBefore(new AuthFilter(personaRepository), UsernamePasswordAuthenticationFilter.class);  // Aggiungi il filtro prima di UsernamePasswordAuthenticationFilter
+                .addFilterBefore(new AuthFilter(), UsernamePasswordAuthenticationFilter.class);  // Aggiungi il filtro prima di UsernamePasswordAuthenticationFilter
         return http.build();
     }
 
     @Bean
     public FilterRegistrationBean<AuthFilter> loggingFilter() {
         FilterRegistrationBean<AuthFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new AuthFilter(personaRepository));
+        registrationBean.setFilter(new AuthFilter());
         registrationBean.addUrlPatterns("/test/*");  // Applica il filtro agli endpoint "/test/*"
         return registrationBean;
     }
