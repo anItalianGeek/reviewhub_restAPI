@@ -7,10 +7,26 @@ import java.util.Objects;
 
 @Embeddable
 public class IscrizioneSportelloId implements Serializable {
-    private Sportello sportelloId;
-    private Persona personaId;
+    private Long sportelloId;
+    private String personaId;
 
     public IscrizioneSportelloId() {
+    }
+
+    public Long getSportelloId() {
+        return sportelloId;
+    }
+
+    public void setSportelloId(Long sportelloId) {
+        this.sportelloId = sportelloId;
+    }
+
+    public String getPersonaId() {
+        return personaId;
+    }
+
+    public void setPersonaId(String personaId) {
+        this.personaId = personaId;
     }
 
     @Override

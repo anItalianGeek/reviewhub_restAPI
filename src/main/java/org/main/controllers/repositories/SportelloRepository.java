@@ -14,17 +14,17 @@ import java.util.List;
 public interface SportelloRepository extends JpaRepository<Sportello, Long> {
 
     // Recupera tutti gli sportelli con num_iscritti < max_iscritti
-    @Query("SELECT s FROM Sportello s WHERE s.numIscritti < s.maxIscritti")
+    @Query("SELECT s FROM Sportello s WHERE s.num_iscritti < s.max_iscritti")
     List<Sportello> getSportelliDisponibili();
 
     // Recupera gli sportelli per un docente specifico tramite email
-    @Query("SELECT s FROM Sportello s WHERE s.docenteResponsabile = :emailDocente")
+    @Query("SELECT s FROM Sportello s WHERE s.docente_responsabile = :emailDocente")
     List<Sportello> getSportelliByDocente(@Param("emailDocente") String emailDocente);
 
     // Recupera tutti gli iscritti di uno sportello
     @Query("SELECT p " +
             "FROM Persona p " +
-            "JOIN IscrizioneSportello i ON i.personaIscritta.email = p.email " +
+            "JOIN IscrizioneSportello i ON i.persona.email = p.email " +
             "WHERE i.sportello.id = :idSportello")
     List<Persona> getIscrittiNelloSportello(@Param("idSportello") Long idSportello);
 
@@ -32,20 +32,12 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
     @Query("SELECT s FROM Sportello s JOIN s.iscrizioni i WHERE i.persona.email = :username")
     List<Sportello> getSportelliPrenotati(@Param("username") String username);
 
-    // Iscrivi una persona a uno sportello
-    @Transactional
-    @Modifying
-    @Query("INSERT INTO IscrizioneSportello (sportello.id, persona.email) VALUES (:id, :username)")
-    int iscriviAlloSportello(@Param("id") long id, @Param("username") String username);
-
     // Aggiungi un iscritto a uno sportello
-    @Transactional
     @Modifying
-    @Query("UPDATE Sportello s SET s.numIscritti = s.numIscritti + 1 WHERE s.id = :id AND s.numIscritti < s.maxIscritti")
+    @Query("UPDATE Sportello s SET s.num_iscritti = s.num_iscritti + 1 WHERE s.id = :id AND s.num_iscritti < s.max_iscritti")
     int aggiungiIscritto(@Param("id") long id);
 
-    // Crea uno sportello
-    @Transactional
+    /* Crea uno sportello
     @Modifying
     @Query("INSERT INTO Sportello (nomeSportello, numIscritti, maxIscritti, aula.id, materia.id, docenteResponsabile) " +
             "VALUES (:nomeSportello, 0, :maxIscritti, :aula, :materia, :docenteResponsabile)")
@@ -53,17 +45,11 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
                       @Param("maxIscritti") int maxIscritti,
                       @Param("materia") long materia,
                       @Param("aula") long aula,
-                      @Param("docenteResponsabile") String docenteResponsabile);
+                      @Param("docenteResponsabile") String docenteResponsabile); */
 
     // Rimuovi un iscritto dallo sportello
-    @Transactional
     @Modifying
-    @Query("UPDATE Sportello s SET s.numIscritti = s.numIscritti - 1 WHERE s.id = :id AND s.numIscritti > 0")
+    @Query("UPDATE Sportello s SET s.num_iscritti = s.num_iscritti - 1 WHERE s.id = :id AND s.num_iscritti > 0")
     int rimuoviIscritto(@Param("id") long id);
 
-    // Cancella un'iscrizione dallo sportello
-    @Transactional
-    @Modifying
-    @Query("DELETE FROM IscrizioneSportello i WHERE i.sportello.id = :id AND i.persona.email = :user")
-    int cancellaIscrizione(@Param("id") long id, @Param("user") String user);
 }

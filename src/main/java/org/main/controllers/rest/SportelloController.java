@@ -1,7 +1,9 @@
 package org.main.controllers.rest;
 
+import org.main.controllers.repositories.IscrizioneSportelloRepository;
 import org.main.controllers.repositories.PersonaRepository;
 import org.main.controllers.repositories.SportelloRepository;
+import org.main.models.IscrizioneSportello;
 import org.main.models.wrappers.Iscrizione;
 import org.main.models.wrappers.WrapperSportelliDocente;
 import org.main.models.Persona;
@@ -26,10 +28,14 @@ public class SportelloController {
 
     private static final String DOMAIN = "@chilesotti.it";
     private final SportelloRepository sportelloRepository;
-
+    private final IscrizioneSportelloRepository iscrizioneSportelloRepository;
+    private final PersonaRepository personaRepository;
+    
     @Autowired
-    public SportelloController(SportelloRepository sportelloRepository){
+    public SportelloController(SportelloRepository sportelloRepository, IscrizioneSportelloRepository iscrizioneSportelloRepository, PersonaRepository personaRepository){
         this.sportelloRepository = sportelloRepository;
+        this.iscrizioneSportelloRepository = iscrizioneSportelloRepository;
+        this.personaRepository = personaRepository;
     }
     
     @Async("requestHandler")
@@ -102,13 +108,12 @@ public class SportelloController {
             if (righeModificate == 0)
                 return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
             else {
-                righeModificate = sportelloRepository.iscriviAlloSportello(id, author + DOMAIN);
-                if (righeModificate == 0) {
-                    sportelloRepository.rimuoviIscritto(id);
-                    return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
-                }
-                else
-                    return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.CREATED);
+                Sportello sportello = sportelloRepository.findById(id).orElse(null);
+                Persona persona = personaRepository.findById(author + DOMAIN).orElse(null);
+                if (persona == null || sportello == null)
+                    return new ResponseEntity<>("Operazione Fallita.", HttpStatus.NOT_FOUND);
+                iscrizioneSportelloRepository.save(new IscrizioneSportello(sportello, persona));
+                return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.CREATED);
             }
         });
     }
@@ -118,11 +123,8 @@ public class SportelloController {
     @Transactional
     public CompletableFuture<ResponseEntity<String>> creaSportello(@RequestBody Sportello datiNuovoSportello) {
         return CompletableFuture.supplyAsync(() -> {
-            int modificaCompiuta = sportelloRepository.creaSportello(datiNuovoSportello.getNome_sportello(), datiNuovoSportello.getMax_iscritti(), datiNuovoSportello.getMateria().getId(), datiNuovoSportello.getAula().getId(), datiNuovoSportello.getDocente_responsabile().getEmail());
-            if (modificaCompiuta == 0)
-                return new ResponseEntity<>("Operazione fallita", HttpStatus.INTERNAL_SERVER_ERROR);
-            else
-                return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.CREATED);
+            sportelloRepository.save(datiNuovoSportello);
+            return new ResponseEntity<>("Operazione Completata", HttpStatus.CREATED);
         });
     }
 
@@ -163,7 +165,7 @@ public class SportelloController {
             if (rowsAffected == 0)
                 return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
             else {
-                rowsAffected = sportelloRepository.cancellaIscrizione(id, username + DOMAIN);
+                rowsAffected = iscrizioneSportelloRepository.cancellaIscrizione(id, username + DOMAIN);
                 if (rowsAffected == 0) {
                     sportelloRepository.aggiungiIscritto(id);
                     return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -182,7 +184,7 @@ public class SportelloController {
             if (rowsAffected == 0)
                 return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
             else {
-                rowsAffected = sportelloRepository.cancellaIscrizione(id, author + DOMAIN);
+                rowsAffected = iscrizioneSportelloRepository.cancellaIscrizione(id, author + DOMAIN);
                 if (rowsAffected == 0) {
                     sportelloRepository.aggiungiIscritto(id);
                     return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);

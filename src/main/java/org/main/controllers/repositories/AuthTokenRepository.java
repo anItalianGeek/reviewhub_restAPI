@@ -11,15 +11,21 @@ import org.springframework.stereotype.Repository;
 public interface AuthTokenRepository extends JpaRepository<AuthToken, AuthTokenId> {
 
     // Verifica se un token esiste e non è scaduto
-    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END FROM AuthToken t WHERE t.token = :provided_token AND t.user.id = :user AND t.expiresAt > CURRENT_TIMESTAMP")
-    Boolean verificaCodice(@Param("provided_token") String provided_token, @Param("user") String user);
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM AuthToken t " +
+            "WHERE t.id.tokenId = :provided_token " +
+            "AND t.user.email = :user " +
+            "AND t.id.expiresAtId > CURRENT_TIMESTAMP")
+    Boolean verificaCodice(@Param("provided_token") String providedToken,
+                           @Param("user") String userEmail);
+
 
     // Verifica se il token è scaduto
     @Query("SELECT CASE WHEN COUNT(a) > 0 THEN TRUE ELSE FALSE END " +
             "FROM AuthToken a " +
-            "WHERE a.token = :providedToken " +
-            "AND a.userId = :username " +
-            "AND a.expiresAt < CURRENT_TIMESTAMP")
+            "WHERE a.id.tokenId = :providedToken " +
+            "AND a.id.userId = :username " +
+            "AND a.id.expiresAtId < CURRENT_TIMESTAMP")
     boolean verificaCodiceScaduto(@Param("providedToken") String providedToken, @Param("username") String username);
 
     // Ottieni il ruolo dell'utente

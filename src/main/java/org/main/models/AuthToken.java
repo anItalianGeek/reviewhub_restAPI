@@ -1,8 +1,10 @@
 package org.main.models;
 
 import jakarta.persistence.*;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Table(name = "auth_token")
@@ -11,24 +13,20 @@ public class AuthToken {
     @EmbeddedId
     private AuthTokenId id;
 
-    @Column(name = "token")
-    @MapsId("tokenId")
-    private String token;
-
     @ManyToOne
     @JoinColumn(name = "user_id")
     @MapsId("userId")
     private Persona user;
 
-    @Column(name = "expires_at")
-    @MapsId("expiresAtId")
-    private LocalDateTime expiresAt;
     
     public AuthToken() {}
 
     public AuthToken(String token, Persona user) {
-        this.token = token;
         this.user = user;
+        this.id = new AuthTokenId();
+        this.id.setTokenId(token);
+        this.id.setUserId(user.getEmail());
+        this.id.setExpiresAtId(LocalDateTime.now().plusMonths(1));
     }
 
     public Persona getUser() {
@@ -39,21 +37,12 @@ public class AuthToken {
         this.user = user;
     }
 
-    public String getToken() {
-        return token;
+    public AuthTokenId getId() {
+        return id;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setId(AuthTokenId id) {
+        this.id = id;
     }
-
-    public LocalDateTime getExpiresAt() {
-        return expiresAt;
-    }
-
-    public void setExpiresAt(LocalDateTime expiresAt) {
-        this.expiresAt = expiresAt;
-    }
-    
 }
 

@@ -1,5 +1,6 @@
 package org.main.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 import java.io.Serializable;
@@ -10,15 +11,19 @@ import java.util.Objects;
 @Embeddable
 public class GiornoId implements Serializable {
 
+    @Column(name = "data_inizio")
     private LocalDateTime data_inizioId;
+
+    @Column(name = "data_fine")
     private LocalDateTime data_fineId;
-    private Sportello sportelloId;
+    
+    private Long sportelloId;
 
     // Costruttore, getter, setter, equals e hashCode
     public GiornoId() {
     }
 
-    public GiornoId(LocalDateTime data_inizio, LocalDateTime data_fine, Sportello sportelloId) {
+    public GiornoId(LocalDateTime data_inizio, LocalDateTime data_fine, Long sportelloId) {
         this.data_inizioId = data_inizio;
         this.data_fineId = data_fine;
         this.sportelloId = sportelloId;
@@ -40,11 +45,11 @@ public class GiornoId implements Serializable {
         this.data_fineId = data_fineId;
     }
 
-    public Sportello getSportelloId() {
+    public Long getSportelloId() {
         return sportelloId;
     }
 
-    public void setSportelloId(Sportello sportelloId) {
+    public void setSportelloId(Long sportelloId) {
         this.sportelloId = sportelloId;
     }
 

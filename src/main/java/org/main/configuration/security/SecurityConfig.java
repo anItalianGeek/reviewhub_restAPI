@@ -1,35 +1,43 @@
 package org.main.configuration.security;
 
-import org.main.controllers.repositories.PersonaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import com.mysql.cj.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpRequestResponseHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeRequests()
-                .requestMatchers("/test/**").authenticated()  // Protegge gli endpoint "/test/**"
-                .anyRequest().permitAll()  // Permette tutte le altre richieste
-                .and()
-                .addFilterBefore(new AuthFilter(), UsernamePasswordAuthenticationFilter.class);  // Aggiungi il filtro prima di UsernamePasswordAuthenticationFilter
-        return http.build();
-    }
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
-    public FilterRegistrationBean<AuthFilter> loggingFilter() {
-        FilterRegistrationBean<AuthFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new AuthFilter());
-        registrationBean.addUrlPatterns("/test/*");  // Applica il filtro agli endpoint "/test/*"
-        return registrationBean;
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .addFilterBefore(new AuthFilter(), UsernamePasswordAuthenticationFilter.class) // Filtro personalizzato
+                .csrf(csrf -> csrf.disable()) // Disabilitazione CSRF
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .formLogin(form -> form.disable()) // Disabilita formLogin
+                .httpBasic(basic -> basic.disable()) // Disabilita httpBasic
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/users/login", "/users/create", "/test/**", "/users/check").permitAll() // Questi endpoint sono accessibili senza autenticazione
+                        .anyRequest().authenticated() // Tutti gli altri endpoint richiedono autenticazione
+                )
+                .build();
     }
+    
+    
 }

@@ -38,7 +38,7 @@ public class Persona {
 
     public Persona() {}
 
-    public Persona(String email, String classe, String password, UserIdentity ruolo, String cognome, String nome, List<Sportello> sportelli, List<AuthToken> authTokens) {
+    public Persona(String email, String classe, String password, UserIdentity ruolo, String cognome, String nome, List<Sportello> sportelli, List<AuthToken> authTokens, List<IscrizioneSportello> iscrizioni) {
         this.email = email;
         this.classe = classe;
         this.password = password;
@@ -47,6 +47,7 @@ public class Persona {
         this.nome = nome;
         this.sportelli = sportelli;
         this.authTokens = authTokens;
+        this.iscrizioni = iscrizioni;
     }
 
     public String getEmail() {
@@ -112,5 +113,27 @@ public class Persona {
     public void setAuthTokens(List<AuthToken> authTokens) {
         this.authTokens = authTokens;
     }
-    
+
+    public List<IscrizioneSportello> getIscrizioni() {
+        return iscrizioni;
+    }
+
+    public void setIscrizioni(List<IscrizioneSportello> iscrizioni) {
+        this.iscrizioni = iscrizioni;
+    }
+
+    @Override
+    public String toString() {
+        return "Persona{" +
+                "email='" + email + '\'' +
+                ", nome='" + nome + '\'' +
+                ", cognome='" + cognome + '\'' +
+                ", password='" + password + '\'' +
+                ", ruolo=" + ruolo +
+                ", classe='" + classe + '\'' +
+                ", authTokens=" + authTokens +
+                ", sportelli=" + sportelli +
+                ", iscrizioni=" + iscrizioni +
+                '}';
+    }
 }

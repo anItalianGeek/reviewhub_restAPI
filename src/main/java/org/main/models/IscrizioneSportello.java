@@ -21,6 +21,19 @@ public class IscrizioneSportello {
 
     public IscrizioneSportello() {}
 
+    public IscrizioneSportello(Sportello sportello, Persona persona) {
+        // Inizializza l'EmbeddedId
+        IscrizioneSportelloId iscrizioneId = new IscrizioneSportelloId();
+        iscrizioneId.setSportelloId(sportello.getId_sportello());
+        iscrizioneId.setPersonaId(persona.getEmail());
+
+        // Configura i campi
+        this.id = iscrizioneId;
+        this.sportello = sportello;
+        this.persona = persona;
+    }
+
+
     public IscrizioneSportelloId getId() {
         return id;
     }

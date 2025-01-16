@@ -45,7 +45,7 @@ public class Sportello {
 
     public Sportello() {}
 
-    public Sportello(long id_sportello, String nome_sportello, String descrizione_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, List<Giorno> giorni) {
+    public Sportello(long id_sportello, String nome_sportello, String descrizione_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, List<Giorno> giorni, List<IscrizioneSportello> iscrizioni) {
         this.id_sportello = id_sportello;
         this.docente_responsabile = docente_responsabile;
         this.materia = materia;
@@ -55,6 +55,7 @@ public class Sportello {
         this.nome_sportello = nome_sportello;
         this.descrizione_sportello = descrizione_sportello;
         this.giorni = giorni;
+        this.iscrizioni = iscrizioni;
     }
 
     public String getNome_sportello() {
@@ -127,5 +128,13 @@ public class Sportello {
 
     public void setGiorni(List<Giorno> giorni) {
         this.giorni = giorni;
+    }
+
+    public List<IscrizioneSportello> getIscrizioni() {
+        return iscrizioni;
+    }
+
+    public void setIscrizioni(List<IscrizioneSportello> iscrizioni) {
+        this.iscrizioni = iscrizioni;
     }
 }

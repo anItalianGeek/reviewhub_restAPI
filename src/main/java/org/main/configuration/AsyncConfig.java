@@ -1,23 +1,30 @@
 package org.main.configuration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
-import java.util.concurrent.Executor;
+import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 
 @Configuration
+@EnableAsync
 public class AsyncConfig {
     
+    private static final Logger logger = LoggerFactory.getLogger(AsyncConfig.class);
+
     @Bean(name = "requestHandler")
-    public Executor requestHandler() {
+    public AsyncTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);  // Numero minimo di thread
-        executor.setMaxPoolSize(20);   // Numero massimo di thread
-        executor.setQueueCapacity(500); // Capacità della coda di task
-        executor.setThreadNamePrefix("AsyncThread-");
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("AsyncExecutor-");
         executor.initialize();
-        return executor;
+        return new DelegatingSecurityContextAsyncTaskExecutor(executor);
     }
-    
+
 }
+

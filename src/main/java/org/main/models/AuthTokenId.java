@@ -1,5 +1,6 @@
 package org.main.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 import java.io.Serializable;
@@ -10,8 +11,12 @@ import java.util.Objects;
 @Embeddable
 public class AuthTokenId implements Serializable {
 
+    @Column(name = "token")
     private String tokenId;
-    private Persona userId;
+    
+    private String userId;
+    
+    @Column(name = "expires_at")
     private LocalDateTime expiresAtId;
 
     public AuthTokenId() {}
@@ -29,5 +34,29 @@ public class AuthTokenId implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(tokenId, userId, expiresAtId);
+    }
+
+    public String getTokenId() {
+        return tokenId;
+    }
+
+    public void setTokenId(String tokenId) {
+        this.tokenId = tokenId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public LocalDateTime getExpiresAtId() {
+        return expiresAtId;
+    }
+
+    public void setExpiresAtId(LocalDateTime expiresAtId) {
+        this.expiresAtId = expiresAtId;
     }
 }

@@ -46,6 +46,7 @@ public final class ClientStudentHandler {
                             resultSet.getString("cognome"),
                             resultSet.getString("nome"),
                             null,
+                            null,
                             null
                     );
                     authenticated = true;
@@ -103,6 +104,7 @@ public final class ClientStudentHandler {
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
                             null,
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -116,14 +118,15 @@ public final class ClientStudentHandler {
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            new LinkedList<>()
+                            new LinkedList<>(),
+                            null
                     );
                     sportelloMap.put(idSportello, sportello);
                 }
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        sportello
+                        idSportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -166,6 +169,7 @@ public final class ClientStudentHandler {
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
                             null,
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -179,14 +183,15 @@ public final class ClientStudentHandler {
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            new LinkedList<>()
+                            new LinkedList<>(),
+                            null
                     );
                     sportelloMap.put(idSportello, sportello);
                 }
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        sportello
+                        idSportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -229,6 +234,7 @@ public final class ClientStudentHandler {
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
                             null,
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -242,14 +248,15 @@ public final class ClientStudentHandler {
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            new LinkedList<>()
+                            new LinkedList<>(),
+                            null
                     );
                     sportelloMap.put(idSportello, sportello);
                 }
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        sportello
+                        idSportello
                 );
                 sportello.getGiorni().add(giorno);
             }

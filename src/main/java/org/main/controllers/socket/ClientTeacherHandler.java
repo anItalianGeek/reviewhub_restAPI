@@ -48,6 +48,7 @@ public final class ClientTeacherHandler {
                             resultSet.getString("cognome"),
                             resultSet.getString("nome"),
                             null,
+                            null,
                             null
                     );
                     authenticated = true;
@@ -114,6 +115,7 @@ public final class ClientTeacherHandler {
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
                             null,
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -127,7 +129,8 @@ public final class ClientTeacherHandler {
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            new LinkedList<>()
+                            new LinkedList<>(),
+                            null
                     );
                     sportelloMap.put(idSportello, sportello);
 
@@ -141,7 +144,7 @@ public final class ClientTeacherHandler {
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        sportello
+                        idSportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -190,6 +193,7 @@ public final class ClientTeacherHandler {
                             resultSet.getString("docente_nome"),
                             resultSet.getString("cognome"),
                             null,
+                            null,
                             null
                     );
                     Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
@@ -203,7 +207,8 @@ public final class ClientTeacherHandler {
                             aula,
                             resultSet.getInt("num_iscritti"),
                             resultSet.getInt("max_iscritti"),
-                            new LinkedList<>()
+                            new LinkedList<>(),
+                            null
                     );
                     sportelloMap.put(idSportello, sportello);
 
@@ -218,7 +223,7 @@ public final class ClientTeacherHandler {
                 Giorno giorno = new Giorno(
                         resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                         resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                        sportello
+                        idSportello
                 );
                 sportello.getGiorni().add(giorno);
             }
@@ -263,8 +268,8 @@ public final class ClientTeacherHandler {
 
                     // Inserisci i giorni associati
                     for (Giorno giorno : datiNuovoSportello.getGiorni()) {
-                        giorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getData_inizio()));
-                        giorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getData_fine()));
+                        giorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getId().getData_inizioId()));
+                        giorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getId().getData_fineId()));
                         giorniStatement.setLong(3, idSportello);
                         giorniStatement.executeUpdate();
                     }
@@ -357,29 +362,18 @@ public final class ClientTeacherHandler {
 
                 // Recupero e ordinamento dei giorni
                 recuperaGiorni.setLong(1, idSportello);
-                /* Sportello sportelloTmp = new Sportello(
-                        idSportello,
-                        resultSet.getString("nome_sportello"),
-                        resultSet.getString("descrizione_sportello"),
-                        datiNuovoSportello.getDocente_responsabile(),
-                        datiNuovoSportello.getMateria(),
-                        datiNuovoSportello.getAula(),
-                        resultSet.getInt("num_iscritti"),
-                        resultSet.getInt("max_iscritti"),
-                        datiNuovoSportello.getGiorni()
-                ); */
                 resultSet = recuperaGiorni.executeQuery();
                 LinkedList<Giorno> giorniVecchi = new LinkedList<>();
                 while (resultSet.next()) {
                     Giorno giorno = new Giorno(
                             resultSet.getTimestamp("data_inizio").toLocalDateTime(),
                             resultSet.getTimestamp("data_fine").toLocalDateTime(),
-                            datiNuovoSportello //sportelloTmp
+                            idSportello
                     );
                     giorniVecchi.add(giorno);
                 }
-                giorniVecchi.sort((a, b) -> a.getData_inizio().compareTo(b.getData_inizio()));
-                datiNuovoSportello.getGiorni().sort((a, b) -> a.getData_inizio().compareTo(b.getData_inizio()));
+                giorniVecchi.sort((a, b) -> a.getId().getData_inizioId().compareTo(b.getId().getData_inizioId()));
+                datiNuovoSportello.getGiorni().sort((a, b) -> a.getId().getData_inizioId().compareTo(b.getId().getData_inizioId()));
 
                 // Se i giorni sono diversi, cancella e reinserisci
                 if (!giorniVecchi.equals(datiNuovoSportello.getGiorni())) {
@@ -388,8 +382,8 @@ public final class ClientTeacherHandler {
 
                     inserisciGiorniStatement.setLong(3, idSportello);
                     for (Giorno giorno : datiNuovoSportello.getGiorni()) {
-                        inserisciGiorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getData_fine()));
-                        inserisciGiorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getData_inizio()));
+                        inserisciGiorniStatement.setTimestamp(1, Timestamp.valueOf(giorno.getId().getData_fineId()));
+                        inserisciGiorniStatement.setTimestamp(2, Timestamp.valueOf(giorno.getId().getData_inizioId()));
                         inserisciGiorniStatement.executeUpdate();
                     }
                 }
