@@ -2,14 +2,12 @@ package org.main.configuration.security;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.main.models.Persona;
-import org.main.models.Sportello;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.GenericFilterBean;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -27,7 +25,7 @@ import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 public class AuthFilter extends OncePerRequestFilter {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuthFilter.class);
     private static final String jdbcUrl = "jdbc:mysql://localhost:3306/reviewhub_db?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true";
     private static final String username = "admin";
@@ -35,7 +33,7 @@ public class AuthFilter extends OncePerRequestFilter {
     private static Connection connection;
     private static final Semaphore mutex = new Semaphore(1);
     private static final String DOMAIN = "@chilesotti.it";
-    
+
     public AuthFilter() {
         try {
             connection = DriverManager.getConnection(jdbcUrl, username, password);
@@ -43,11 +41,11 @@ public class AuthFilter extends OncePerRequestFilter {
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (path.equals("/users/login") || path.equals("/users/create") || path.equals("/test") || path.equals("/users/check")) {
+        if (path.equals("/users/login") || path.equals("/users/create") || path.equals("/test") || path.equals("/users/check") || path.equals("/users/logout")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -56,16 +54,16 @@ public class AuthFilter extends OncePerRequestFilter {
         String authToken = request.getHeader("Authorization");
         String username = request.getParameter("author");
         String role = getRole(username);
-        
+
         // Verifica la validità del token
         if (authToken == null || !isValidAuthToken(username, authToken.replace("Bearer ", ""))) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Unauthorized: Missing or Invalid Token");
             return;
         }
-        
+
         Gson gson = new GsonBuilder().create();
-        if (path.equals("/sportello/all") || path.equals("/users/all") || path.matches("^\\/\\d+\\/remove-subscription\\/[a-zA-Z0-9_]+$")) {
+        if (path.equals("/sportello/all") || path.equals("/users/all") || path.matches("^\\/\\d+\\/remove-subscription\\/[a-zA-Z0-9_]+$") || path.matches("^/materia/.+\n") || path.matches("^/aula/.+\n") ) {
             if (!role.equals("ADMIN")) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Forbidden: Insufficient Permissions");
@@ -79,13 +77,11 @@ public class AuthFilter extends OncePerRequestFilter {
                 return;
             }
         } else if (path.matches("/users/modify/\\w+") || path.matches("/users/remove/\\w+")) {
-            String newUsername = gson.fromJson(getRequestBody(request), Persona.class).getEmail().split("@")[0];
-            if (newUsername.equals(username) || role.equals("ADMIN")) {
-            } else {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.getWriter().write("Forbidden: Insufficient Permissions");
-                return;
-            }
+            /*
+            * CONTROLLO FATTO ALL'INTERNO DEL CONTROLLER IN CASO ECCEZZIONALE A CAUSA DI PROBLEMI DI GESTIONE DELLO STREAM DI DATI
+            * 
+            * QUI È SUFFICENTE VERIFICARE L'AUTENTICITÀ DI COLUI CHE EFFETTUA LA RICHIESTA
+            * */
         } else if (path.matches("/sportello/by/\\w+")) {
             String teacherName = path.split("/")[3];
             if (teacherName.equals(username) && !role.equals("STUDENT")) {
@@ -107,9 +103,10 @@ public class AuthFilter extends OncePerRequestFilter {
                 return;
             }
         } else if (path.matches("/sportello/modify/\\w+") || path.matches("/sportello/remove/\\w+")) {
-            String teacherName = gson.fromJson(getRequestBody(request), Sportello.class).getDocente_responsabile().getEmail().split("@")[0];
-            if (teacherName.equals(username) && !role.equals("STUDENT")) {
-            } else {
+            String teacherName = getDocenteResponsabileForSportello(Long.parseLong(path.split("/")[3])).split("@")[0];
+            
+            boolean isAuthorized = (teacherName.equals(username) && role.equals("TEACHER")) || role.equals("ADMIN");
+            if (!isAuthorized) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Forbidden: Insufficient Permissions");
                 return;
@@ -119,9 +116,13 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(username, null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        logger.info("authentication > " + SecurityContextHolder.getContext().getAuthentication());
+
         // Se il token è valido, prosegui con la catena di filtri
         filterChain.doFilter(request, response);
     }
@@ -141,8 +142,25 @@ public class AuthFilter extends OncePerRequestFilter {
             mutex.release();
         }
     }
-    
-    private String getRole(String username){
+
+    private String getDocenteResponsabileForSportello(long id) {
+        try {
+            mutex.acquire();
+            PreparedStatement statement = connection.prepareStatement("SELECT docente_responsabile FROM sportello WHERE id_sportello = ?");
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next())
+                return resultSet.getString("docente_responsabile");
+            else
+                return "";
+        } catch (SQLException | InterruptedException ignored) {
+            return "";
+        } finally {
+            mutex.release();
+        }
+    }
+
+    private String getRole(String username) {
         try {
             mutex.acquire();
             PreparedStatement statement = connection.prepareStatement("SELECT ruolo FROM persona WHERE email = ?");
@@ -163,5 +181,5 @@ public class AuthFilter extends OncePerRequestFilter {
         BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream()));
         return reader.lines().collect(Collectors.joining(System.lineSeparator()));
     }
-    
+
 }

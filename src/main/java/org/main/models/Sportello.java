@@ -37,10 +37,10 @@ public class Sportello {
     @JoinColumn(name = "docente_responsabile")
     private Persona docente_responsabile;
 
-    @OneToMany(mappedBy = "sportello")
+    @OneToMany(mappedBy = "sportello", fetch = FetchType.EAGER)
     private List<IscrizioneSportello> iscrizioni;
 
-    @OneToMany(mappedBy = "sportello")
+    @OneToMany(mappedBy = "sportello", fetch = FetchType.EAGER)
     private List<Giorno> giorni;
 
     public Sportello() {}

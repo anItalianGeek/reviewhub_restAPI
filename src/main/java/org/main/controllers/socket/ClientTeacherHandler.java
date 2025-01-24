@@ -87,7 +87,7 @@ public final class ClientTeacherHandler {
         String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
                 "FROM SportelloDB s " +
                 "JOIN persona p ON s.docente_responsabile = p.email " +
-                "JOIN materia m ON s.materia_id = m.id_materia " +
+                "JOIN materia m ON s.materia_id = m.nome " +
                 "JOIN aula a ON s.aula_id = a.id " +
                 "JOIN giorno g ON s.id_sportello = g.id_sportello " +
                 "WHERE s.docente_responsabile = ?";
@@ -118,7 +118,7 @@ public final class ClientTeacherHandler {
                             null,
                             null
                     );
-                    Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
+                    Materia materia = new Materia(resultSet.getString("materia_nome"), null);
                     Aula aula = new Aula(resultSet.getInt("id"), resultSet.getString("aula_nome"), null);
                     sportello = new Sportello(
                             idSportello,
@@ -162,7 +162,7 @@ public final class ClientTeacherHandler {
         String query = "SELECT s.*, p.email, p.nome AS docente_nome, p.cognome, m.nome AS materia_nome, a.nome AS aula_nome, g.data_inizio, g.data_fine " +
                 "FROM SportelloDB s " +
                 "JOIN persona p ON s.docente_responsabile = p.email " +
-                "JOIN materia m ON s.materia_id = m.id_materia " +
+                "JOIN materia m ON s.materia_id = m.nome " +
                 "JOIN aula a ON s.aula_id = a.id " +
                 "JOIN giorno g ON s.id_sportello = g.id_sportello " +
                 "JOIN iscrizione_sportello i ON s.id_sportello = i.id_sportello " +
@@ -196,7 +196,7 @@ public final class ClientTeacherHandler {
                             null,
                             null
                     );
-                    Materia materia = new Materia(resultSet.getString("materia_nome"), Integer.MIN_VALUE, null);
+                    Materia materia = new Materia(resultSet.getString("materia_nome"), null);
                     Aula aula = new Aula(resultSet.getInt("id"), resultSet.getString("aula_nome"), null);
                     sportello = new Sportello(
                             idSportello,
@@ -252,7 +252,7 @@ public final class ClientTeacherHandler {
             sportelloStatement.setLong(2, datiNuovoSportello.getMax_iscritti());
             sportelloStatement.setString(3, datiNuovoSportello.getDocente_responsabile().getEmail());
             sportelloStatement.setInt(4, datiNuovoSportello.getAula().getId());
-            sportelloStatement.setInt(5, datiNuovoSportello.getMateria().getId());
+            sportelloStatement.setString(5, datiNuovoSportello.getMateria().getNome());
 
             int righeModificate = sportelloStatement.executeUpdate();
 
@@ -332,9 +332,9 @@ public final class ClientTeacherHandler {
                 }
 
                 // Controllo e costruzione della query per 'materia_id'
-                if (datiNuovoSportello.getMateria().getId() != resultSet.getInt("materia_id")) {
+                if (!datiNuovoSportello.getMateria().equals(resultSet.getString("materia_id"))) {
                     updateQuery.append("materia_id = ?, ");
-                    params.add(datiNuovoSportello.getMateria().getId());
+                    params.add(datiNuovoSportello.getMateria().getNome());
                 }
 
                 // Controllo e costruzione della query per 'max_iscritti'

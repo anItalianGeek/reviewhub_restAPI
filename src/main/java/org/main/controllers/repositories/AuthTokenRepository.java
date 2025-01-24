@@ -4,9 +4,11 @@ import org.main.models.AuthToken;
 import org.main.models.AuthTokenId;
 import org.main.models.UserIdentity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface AuthTokenRepository extends JpaRepository<AuthToken, AuthTokenId> {
 
@@ -31,5 +33,15 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, AuthTokenI
     // Ottieni il ruolo dell'utente
     @Query("SELECT p.ruolo FROM Persona p WHERE p.email = :user")
     UserIdentity ottieniRuolo(@Param("user") String user);
+    
+    // Effettua il logout dell'utente
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AuthToken a WHERE a.user.email = :email")
+    void logout(@Param("email") String email);
+    
+    // Controlla se esiste un token
+    @Query("SELECT COUNT(a) FROM AuthToken a WHERE a.user.email = :email")
+    int esistonoToken(@Param("email") String email);
     
 }

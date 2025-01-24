@@ -1,9 +1,9 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;
-
 @Entity
 @Table(name = "aula")
 public class Aula {
@@ -16,6 +16,7 @@ public class Aula {
     private String nome;
 
     @OneToMany(mappedBy = "aula")
+    @JsonIgnore
     private List<Sportello> sportelli;
 
     public Aula() {}
@@ -34,14 +35,6 @@ public class Aula {
         this.id = id;
     }
 
-    public List<Sportello> getSportelli() {
-        return sportelli;
-    }
-
-    public void setSportelli(List<Sportello> sportelli) {
-        this.sportelli = sportelli;
-    }
-
     public String getNome() {
         return nome;
     }
@@ -49,4 +42,13 @@ public class Aula {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
+    public List<Sportello> getSportelli() {
+        return sportelli;
+    }
+
+    public void setSportelli(List<Sportello> sportelli) {
+        this.sportelli = sportelli;
+    }
+    
 }

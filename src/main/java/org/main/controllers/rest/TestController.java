@@ -1,36 +1,46 @@
 package org.main.controllers.rest;
 
-import jakarta.transaction.Transactional;
+import org.apache.catalina.User;
 import org.main.controllers.repositories.AuthTokenRepository;
+import org.main.controllers.repositories.IscrizioneSportelloRepository;
 import org.main.controllers.repositories.PersonaRepository;
-import org.main.models.Persona;
+import org.main.controllers.repositories.SportelloRepository;
+import org.main.essentials.AccessData;
+import org.main.models.*;
+import org.main.models.wrappers.Iscrizione;
+import org.main.models.wrappers.WrapperSportelliDocente;
+import org.main.other.SHA256Encryptor;
+import org.main.other.ServerSignatureGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/test")
 public class TestController {
-
-    private final String DOMAIN = "@chilesotti.it";
+    
+    private static final String DOMAIN = "@chilesotti.it";
     private static final Logger logger = LoggerFactory.getLogger(TestController.class);
-    private final AsyncTaskExecutor requestHandler;
+    private final SportelloRepository sportelloRepository;
+    private final IscrizioneSportelloRepository iscrizioneSportelloRepository;
     private final PersonaRepository personaRepository;
     private final AuthTokenRepository authTokenRepository;
 
     @Autowired
-    public TestController(@Qualifier("requestHandler") AsyncTaskExecutor taskExecutor, PersonaRepository personaRepository, AuthTokenRepository authTokenRepository) {
-        this.requestHandler = taskExecutor;
+    public TestController(PersonaRepository personaRepository, IscrizioneSportelloRepository iscrizioneSportelloRepository, SportelloRepository sportelloRepository, AuthTokenRepository authTokenRepository) {
         this.personaRepository = personaRepository;
+        this.iscrizioneSportelloRepository = iscrizioneSportelloRepository;
+        this.sportelloRepository = sportelloRepository;
         this.authTokenRepository = authTokenRepository;
     }
     
@@ -54,23 +64,6 @@ public class TestController {
     @PostMapping
     public CompletableFuture<ResponseEntity<Persona>> test_post() {
         return CompletableFuture.supplyAsync(() -> ResponseEntity.ok(new Persona()));
-    }
-
-
-
-    @Async("requestHandler")
-    @GetMapping("/{username}")
-    @Transactional
-    public CompletableFuture<ResponseEntity<Persona>> getPersonaById(@PathVariable String username) {
-        logger.info("Controller: Utente autenticato prima dell'@Async: {}", SecurityContextHolder.getContext().getAuthentication());
-
-        return CompletableFuture.supplyAsync(() -> {
-            logger.info("Asincrono: Utente autenticato: {}", SecurityContextHolder.getContext().getAuthentication());
-            Persona persona = personaRepository.findById(username + DOMAIN).orElse(null);
-            logger.info("Asincrono: Risultato trovato: {}", persona != null ? persona.getEmail() : "Nessuna persona trovata");
-            return ResponseEntity.ok(new Persona(persona.getEmail(), persona.getClasse(), persona.getPassword(), persona.getRuolo(), persona.getCognome(), persona.getNome(), null, null, null));
-            //return ResponseEntity.ok(persona);
-        }, requestHandler); // Passiamo esplicitamente il task executor
     }
     
 }

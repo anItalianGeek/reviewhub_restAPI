@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 public interface IscrizioneSportelloRepository extends JpaRepository<IscrizioneSportello, IscrizioneSportelloId> {
     
     /* Iscrivi una persona a uno sportello
-    @Transactional
     @Modifying
     @Query("INSERT INTO IscrizioneSportello (sportello.id_sportello, persona.email) VALUES (:id, :username)")
     int iscriviAlloSportello(@Param("id") long id, @Param("username") String username); */
@@ -19,7 +18,18 @@ public interface IscrizioneSportelloRepository extends JpaRepository<IscrizioneS
 
     // Cancella un'iscrizione dallo sportello
     @Modifying
+    @Transactional
     @Query("DELETE FROM IscrizioneSportello i WHERE i.sportello.id_sportello = :id AND i.persona.email = :user")
     int cancellaIscrizione(@Param("id") long id, @Param("user") String user);
     
+    // verifica se esiste un'iscrizione
+    @Query("SELECT COUNT(i) FROM IscrizioneSportello i WHERE i.sportello.id_sportello = :id AND i.persona.email = :email")
+    int esisteIscrizione(@Param("id") long id, @Param("email") String email);
+    
+    
+    // cancella tutte le iscrizioni dello sportello
+    @Query("DELETE FROM IscrizioneSportello i WHERE i.sportello.id_sportello = :id")
+    @Modifying
+    @Transactional
+    void cancellaTutteIscrizioni(@Param("id") long id);
 }

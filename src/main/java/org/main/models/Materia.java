@@ -1,5 +1,6 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -9,32 +10,20 @@ import java.util.List;
 public class Materia {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_materia")
-    private int id;
-
     @Column(name = "nome")
     private String nome;
 
     @OneToMany(mappedBy = "materia")
+    @JsonIgnore
     private List<Sportello> sportelli;
 
     public Materia() {}
 
-    public Materia(String nome, int id, List<Sportello> sportelli) {
+    public Materia(String nome, List<Sportello> sportelli) {
         this.nome = nome;
-        this.id = id;
         this.sportelli = sportelli;
     }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
+    
     public List<Sportello> getSportelli() {
         return sportelli;
     }

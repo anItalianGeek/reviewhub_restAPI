@@ -1,33 +1,28 @@
 package org.main.controllers.rest;
 
-import com.google.gson.GsonBuilder;
-import org.main.configuration.security.SecurityConfig;
 import org.main.controllers.repositories.AuthTokenRepository;
 import org.main.controllers.repositories.PersonaRepository;
+import org.main.controllers.repositories.SportelloRepository;
 import org.main.models.AuthToken;
 import org.main.models.Persona;
+import org.main.essentials.AccessData;
+import org.main.models.Sportello;
 import org.main.models.UserIdentity;
+import org.main.models.wrappers.Iscrizione;
+import org.main.models.wrappers.IscrizioneDetail;
 import org.main.other.SHA256Encryptor;
 import org.main.other.ServerSignatureGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -35,16 +30,22 @@ public class PersonaController {
 
     private static final Logger logger = LoggerFactory.getLogger(PersonaController.class);
     
-    private final AsyncTaskExecutor requestHandler;
     private static final String DOMAIN = "@chilesotti.it";
     private final PersonaRepository personaRepository;
     private final AuthTokenRepository authTokenRepository;
+    private final SportelloRepository sportelloRepository;
 
     @Autowired
-    public PersonaController(@Qualifier("requestHandler") AsyncTaskExecutor taskExecutor, PersonaRepository personaRepository, AuthTokenRepository authTokenRepository) {
-        this.requestHandler = taskExecutor;
+    public PersonaController(PersonaRepository personaRepository, AuthTokenRepository authTokenRepository, SportelloRepository sportelloRepository) {
         this.personaRepository = personaRepository;
         this.authTokenRepository = authTokenRepository;
+        this.sportelloRepository = sportelloRepository;
+    }
+
+    @Async("requestHandler")
+    @GetMapping("/test")
+    public CompletableFuture<ResponseEntity<String>> test() {
+        return CompletableFuture.supplyAsync(() -> ResponseEntity.ok("Test Successful!"));
     }
 
     @Async("requestHandler")
@@ -58,32 +59,57 @@ public class PersonaController {
                 return ResponseEntity.ok(true);
         });
     }
-
+    
     @Async("requestHandler")
     @GetMapping("/all")
-    public CompletableFuture<ResponseEntity<List<Persona>>> getTuttePersone() {
-        return CompletableFuture.supplyAsync(() -> new ResponseEntity<>(personaRepository.findAll(), HttpStatus.OK));
+    public CompletableFuture<ResponseEntity<List<IscrizioneDetail>>> getTuttePersone() {
+        return CompletableFuture.supplyAsync(() -> {
+            
+            List<Persona> list = personaRepository.findAll();
+            LinkedList<IscrizioneDetail> iscrizioni = new LinkedList<>();
+            
+            list.forEach(e -> {
+                LinkedList<Long> ids = new LinkedList<>();
+                e.getIscrizioni().forEach(id -> ids.add(id.getId().getSportelloId()));
+                e.getSportelli().forEach(s -> {
+                    s.getAula().setSportelli(null);
+                    s.getMateria().setSportelli(null);
+                    s.getDocente_responsabile().setPassword(null);
+                    s.getDocente_responsabile().setAuthTokens(null);
+                    s.getDocente_responsabile().setSportelli(null);
+                    s.getDocente_responsabile().setIscrizioni(null);
+                });
+                
+                List<Sportello> sportelli = sportelloRepository.findAllById(ids.stream().toList());
+                sportelli.forEach(s -> {
+                    s.getAula().setSportelli(null);
+                    s.getMateria().setSportelli(null);
+                    s.getDocente_responsabile().setPassword(null);
+                    s.getDocente_responsabile().setAuthTokens(null);
+                    s.getDocente_responsabile().setSportelli(null);
+                    s.getDocente_responsabile().setIscrizioni(null);
+                    s.setIscrizioni(null);
+                });
+                
+                iscrizioni.add(new IscrizioneDetail(e, sportelli));
+            });
+            
+            return new ResponseEntity<>(iscrizioni.stream().toList(), HttpStatus.OK);
+        });
     }
-    
 
     @Async("requestHandler")
     @GetMapping("/{username}")
     public CompletableFuture<ResponseEntity<Persona>> getPersonaById(@PathVariable String username) {
         return CompletableFuture.supplyAsync(() -> {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Persona persona = personaRepository.findById(username + DOMAIN).orElse(null);
-            if (authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.joining(", ")).contains("ROLE_STUDENT"))
-                return ResponseEntity.ok(new Persona(persona.getEmail(), persona.getClasse(), persona.getPassword(), persona.getRuolo(), persona.getCognome(), persona.getNome(), null, null, null));
-            else if (authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.joining(", ")).contains("ROLE_ADMIN"))
-                return ResponseEntity.ok(persona);
-            else 
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }, requestHandler);
+            if (persona == null)
+                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            persona.getSportelli().forEach(s -> s.setDocente_responsabile(null));
+            return ResponseEntity.ok(persona);
+        });
     }
+
 
     @Async("requestHandler")
     @PostMapping("/login")
@@ -95,6 +121,18 @@ public class PersonaController {
         });
     }
 
+    @Async("requestHandler")
+    @DeleteMapping("logout")
+    public CompletableFuture<ResponseEntity<Boolean>> disconnetti(@RequestParam String author){
+        return CompletableFuture.supplyAsync(() -> {
+            authTokenRepository.logout(author + DOMAIN);
+            if (authTokenRepository.esistonoToken(author + DOMAIN) != 0)
+                throw new RuntimeException("Logout Fallito");
+            else 
+                return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
+        });
+    }
+    
     @Async("requestHandler")
     @PostMapping("/create")
     public CompletableFuture<ResponseEntity<String>> aggiungiPersona(@RequestBody Persona datiNuovaPersona) {
@@ -117,22 +155,29 @@ public class PersonaController {
 
     @Async("requestHandler")
     @PutMapping("/modify/{user}")
-    @Transactional
     public CompletableFuture<ResponseEntity<Persona>> aggiornaPersona(@RequestBody Persona datiPersona, @PathVariable String user) {
         return CompletableFuture.supplyAsync(() -> {
             Persona persona = personaRepository.findById(user + DOMAIN).orElse(null);
 
             if (persona == null || !(user + DOMAIN).equals(persona.getEmail()))
                 return null;
+            else if (!persona.getEmail().split("@")[0].equals(user) && !persona.getRuolo().equals(UserIdentity.ADMIN)) { /* CASO ECCEZZIONALE DI CONTROLLO DENTRO AL CONTROLLER */
+                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            }
             else {
-                if (!persona.getNome().equals(datiPersona.getNome())) persona.setNome(datiPersona.getNome());
+                if (!persona.getEmail().equals(datiPersona.getEmail()))
+                    persona.setEmail(datiPersona.getEmail());
+                if (!persona.getNome().equals(datiPersona.getNome()))
+                    persona.setNome(datiPersona.getNome());
                 if (!persona.getCognome().equals(datiPersona.getCognome()))
                     persona.setCognome(datiPersona.getCognome());
                 if (!persona.getPassword().equals(datiPersona.getPassword()))
                     persona.setPassword(datiPersona.getPassword());
-                if (!persona.getClasse().equals(datiPersona.getClasse())) persona.setClasse(datiPersona.getClasse());
-                if (!persona.getSportelli().equals(datiPersona.getSportelli()))
-                    persona.setSportelli(datiPersona.getSportelli());
+                if (!persona.getRuolo().equals(datiPersona.getRuolo()))
+                    persona.setRuolo(datiPersona.getRuolo());
+                if (!persona.getClasse().equals(datiPersona.getClasse()))
+                    persona.setClasse(datiPersona.getClasse());
+
                 return new ResponseEntity<>(personaRepository.save(persona), HttpStatus.ACCEPTED);
             }
         });
@@ -148,42 +193,6 @@ public class PersonaController {
             else
                 return new ResponseEntity<>("Operazione compiuta.", HttpStatus.NO_CONTENT);
         });
-    }
-
-    public static String getSingleRole() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .findFirst()
-                .map(GrantedAuthority::getAuthority)
-                .orElse(null);
-    }
-
-}
-
-class AccessData {
-
-    private String token;
-    private UserIdentity ruolo;
-
-    public AccessData(String token, UserIdentity ruolo) {
-        this.ruolo = ruolo;
-        this.token = token;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public UserIdentity getRuolo() {
-        return ruolo;
-    }
-
-    public void setRuolo(UserIdentity ruolo) {
-        this.ruolo = ruolo;
     }
 
 }

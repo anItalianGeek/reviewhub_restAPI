@@ -18,7 +18,7 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
     List<Sportello> getSportelliDisponibili();
 
     // Recupera gli sportelli per un docente specifico tramite email
-    @Query("SELECT s FROM Sportello s WHERE s.docente_responsabile = :emailDocente")
+    @Query("SELECT s FROM Sportello s WHERE s.docente_responsabile.email = :emailDocente")
     List<Sportello> getSportelliByDocente(@Param("emailDocente") String emailDocente);
 
     // Recupera tutti gli iscritti di uno sportello
@@ -34,6 +34,7 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
 
     // Aggiungi un iscritto a uno sportello
     @Modifying
+    @Transactional
     @Query("UPDATE Sportello s SET s.num_iscritti = s.num_iscritti + 1 WHERE s.id = :id AND s.num_iscritti < s.max_iscritti")
     int aggiungiIscritto(@Param("id") long id);
 
@@ -49,7 +50,8 @@ public interface SportelloRepository extends JpaRepository<Sportello, Long> {
 
     // Rimuovi un iscritto dallo sportello
     @Modifying
-    @Query("UPDATE Sportello s SET s.num_iscritti = s.num_iscritti - 1 WHERE s.id = :id AND s.num_iscritti > 0")
+    @Transactional
+    @Query("UPDATE Sportello s SET s.num_iscritti = s.num_iscritti - 1 WHERE s.id_sportello = :id AND s.num_iscritti > 0")
     int rimuoviIscritto(@Param("id") long id);
 
 }

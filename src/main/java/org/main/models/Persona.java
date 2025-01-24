@@ -27,13 +27,13 @@ public class Persona {
     @Column(name = "classe")
     private String classe;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private List<AuthToken> authTokens;
 
-    @OneToMany(mappedBy = "docente_responsabile")
+    @OneToMany(mappedBy = "docente_responsabile", fetch = FetchType.EAGER)
     private List<Sportello> sportelli;
 
-    @OneToMany(mappedBy = "persona")
+    @OneToMany(mappedBy = "persona", fetch = FetchType.EAGER)
     private List<IscrizioneSportello> iscrizioni;
 
     public Persona() {}

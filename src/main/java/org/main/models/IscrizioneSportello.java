@@ -1,5 +1,6 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,11 +13,13 @@ public class IscrizioneSportello {
     @ManyToOne
     @MapsId("sportelloId")
     @JoinColumn(name = "id_sportello")
+    @JsonIgnore
     private Sportello sportello;
 
     @ManyToOne
     @MapsId("personaId")
     @JoinColumn(name = "persona_iscritta")
+    @JsonIgnore
     private Persona persona;
 
     public IscrizioneSportello() {}
@@ -41,21 +44,6 @@ public class IscrizioneSportello {
     public void setId(IscrizioneSportelloId id) {
         this.id = id;
     }
-
-    public Sportello getSportello() {
-        return sportello;
-    }
-
-    public void setSportello(Sportello sportello) {
-        this.sportello = sportello;
-    }
-
-    public Persona getPersona() {
-        return persona;
-    }
-
-    public void setPersona(Persona persona) {
-        this.persona = persona;
-    }
+    
 }
 

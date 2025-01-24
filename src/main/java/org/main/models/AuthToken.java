@@ -1,5 +1,6 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.cglib.core.Local;
 
@@ -16,6 +17,7 @@ public class AuthToken {
     @ManyToOne
     @JoinColumn(name = "user_id")
     @MapsId("userId")
+    @JsonIgnore
     private Persona user;
 
     

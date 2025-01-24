@@ -1,5 +1,6 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
@@ -12,9 +13,11 @@ import java.util.Objects;
 public class GiornoId implements Serializable {
 
     @Column(name = "data_inizio")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss[.SSS]]", timezone = "UTC")
     private LocalDateTime data_inizioId;
 
     @Column(name = "data_fine")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss[.SSS]]", timezone = "UTC")
     private LocalDateTime data_fineId;
     
     private Long sportelloId;

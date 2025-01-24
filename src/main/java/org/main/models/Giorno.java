@@ -1,5 +1,6 @@
 package org.main.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public class Giorno {
     @ManyToOne  
     @MapsId("sportelloId")
     @JoinColumn(name = "id_sportello")
+    @JsonIgnore 
     private Sportello sportello;
 
     public Giorno() {}
@@ -39,5 +41,4 @@ public class Giorno {
     public void setSportello(Sportello sportello) {
         this.sportello = sportello;
     }
-    
 }

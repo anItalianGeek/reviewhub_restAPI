@@ -29,6 +29,7 @@ public interface PersonaRepository extends JpaRepository<Persona, String> {
     
     // Cancella una persona
     @Modifying
+    @Transactional
     @Query("DELETE FROM Persona p WHERE p.email = :email")
     int cancellaPersona(@Param("email") String email);
     
