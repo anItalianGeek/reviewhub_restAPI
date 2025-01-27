@@ -19,13 +19,12 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         SpringApplication.run(Main.class, args);
+        /* // GESTIONE SOCKET INCOMPLETA. CODICE COMMENTATO PER IMPEDIRE L'ACCESSO ALLE CONNESSIONI
         SSLServerSocketFactory factory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
         SSLServerSocket serverSocket = (SSLServerSocket) factory.createServerSocket(8889);
-        
-        // Start accepting connections
         while (true) {
             new SocketConnectionManager((SSLSocket) serverSocket.accept()).start();
-        }
+        } */
     }
     
 }
