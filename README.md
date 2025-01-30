@@ -66,6 +66,12 @@
    [Install]
    WantedBy=multi-user.target
    ```
+   Abilita e avvia il servizio 
+   ```bash
+   sudo systemctl enable nome-progetto
+   sudo systemctl start nome-progetto
+   ```
+
 4. Configurazione Certificato HTTPS in Spring Boot con `application.properties`
 - Ottieni il Certificato Let's Encrypt (Consigliato)   
    Installa Certbot per ottenere un certificato gratuito da Let's Encrypt:  
@@ -103,13 +109,6 @@
    ```bash
    sudo systemctl restart nome-progetto
    ```
-
-5. Abilita e avvia il servizio 
-   ```bash
-   sudo systemctl enable nome-progetto
-   sudo systemctl start nome-progetto
-   ```
-
 
 ## Note
 - Configura CORS per il frontend se necessario.
