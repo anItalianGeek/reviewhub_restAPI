@@ -61,7 +61,7 @@ public class AuthFilter extends OncePerRequestFilter {
             response.getWriter().write("Unauthorized: Missing or Invalid Token");
             return;
         }
-
+        
         Gson gson = new GsonBuilder().create();
         if (path.equals("/sportello/all") || path.equals("/users/all") || path.matches("^\\/\\d+\\/remove-subscription\\/[a-zA-Z0-9_]+$") || path.matches("^/materia/.+\n") || path.matches("^/aula/.+\n") ) {
             if (!role.equals("ADMIN")) {

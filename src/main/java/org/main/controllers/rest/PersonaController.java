@@ -135,8 +135,15 @@ public class PersonaController {
     
     @Async("requestHandler")
     @PostMapping("/create")
-    public CompletableFuture<ResponseEntity<String>> aggiungiPersona(@RequestBody Persona datiNuovaPersona) {
+    public CompletableFuture<ResponseEntity<String>> aggiungiPersona(@RequestBody Persona datiNuovaPersona, @RequestParam String author) {
         return CompletableFuture.supplyAsync(() -> {
+            Persona userActionPerformer = personaRepository.findById(author).orElse(null);
+            if (userActionPerformer != null) {
+                if (!userActionPerformer.getRuolo().equals(UserIdentity.ADMIN) && !datiNuovaPersona.getRuolo().equals(UserIdentity.STUDENT))
+                    return new ResponseEntity<>("Impossibile creare un utente con i privilegi indicati. Permessi insufficenti.", HttpStatus.FORBIDDEN);
+            } else if (!datiNuovaPersona.getRuolo().equals(UserIdentity.STUDENT))
+                return new ResponseEntity<>("Impossibile creare un utente con i privilegi indicati. Permessi insufficenti.", HttpStatus.FORBIDDEN);
+            
             personaRepository.save(
                     new Persona(
                             datiNuovaPersona.getEmail(),
