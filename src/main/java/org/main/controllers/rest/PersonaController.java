@@ -115,9 +115,12 @@ public class PersonaController {
     @PostMapping("/login")
     public CompletableFuture<ResponseEntity<AccessData>> accedi(@RequestBody Persona persona) {
         return CompletableFuture.supplyAsync(() -> {
-            String token = SHA256Encryptor.encrypt(ServerSignatureGenerator.generateSignature());
-            authTokenRepository.save(new AuthToken(token, persona));
-            return new ResponseEntity<>(new AccessData(token, personaRepository.ottieniRuolo(persona.getEmail())), HttpStatus.CREATED);
+            if (personaRepository.verificaPassword(persona.getEmail(), SHA256Encryptor.encrypt(persona.getPassword()))) {
+                String token = SHA256Encryptor.encrypt(ServerSignatureGenerator.generateSignature());
+                authTokenRepository.save(new AuthToken(token, persona));
+                return new ResponseEntity<>(new AccessData(token, personaRepository.ottieniRuolo(persona.getEmail())), HttpStatus.CREATED);
+            } else
+                return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         });
     }
 
@@ -148,7 +151,7 @@ public class PersonaController {
                     new Persona(
                             datiNuovaPersona.getEmail(),
                             datiNuovaPersona.getClasse(),
-                            datiNuovaPersona.getPassword(),
+                            SHA256Encryptor.encrypt(datiNuovaPersona.getPassword()),
                             datiNuovaPersona.getRuolo(),
                             datiNuovaPersona.getCognome(),
                             datiNuovaPersona.getNome(),
@@ -178,8 +181,8 @@ public class PersonaController {
                     persona.setNome(datiPersona.getNome());
                 if (!persona.getCognome().equals(datiPersona.getCognome()))
                     persona.setCognome(datiPersona.getCognome());
-                if (!persona.getPassword().equals(datiPersona.getPassword()))
-                    persona.setPassword(datiPersona.getPassword());
+                if (!persona.getPassword().equals(SHA256Encryptor.encrypt(datiPersona.getPassword())))
+                    persona.setPassword(SHA256Encryptor.encrypt(datiPersona.getPassword()));
                 if (!persona.getRuolo().equals(datiPersona.getRuolo()))
                     persona.setRuolo(datiPersona.getRuolo());
                 if (!persona.getClasse().equals(datiPersona.getClasse()))

@@ -18,12 +18,6 @@ public class Sportello {
 
     @Column(name = "descrizione_sportello")
     private String descrizione_sportello;
-    
-    @Column(name = "max_iscritti")
-    private int max_iscritti;
-
-    @Column(name = "num_iscritti")
-    private int num_iscritti;
 
     @ManyToOne
     @JoinColumn(name = "aula_id")
@@ -33,6 +27,9 @@ public class Sportello {
     @JoinColumn(name = "materia_id")
     private Materia materia;
 
+    @Column(name = "sportello_disponibile")
+    private boolean sportello_disponibile;
+    
     @ManyToOne
     @JoinColumn(name = "docente_responsabile")
     private Persona docente_responsabile;
@@ -45,13 +42,11 @@ public class Sportello {
 
     public Sportello() {}
 
-    public Sportello(long id_sportello, String nome_sportello, String descrizione_sportello, Persona docente_responsabile, Materia materia, Aula aula, int num_iscritti, int max_iscritti, List<Giorno> giorni, List<IscrizioneSportello> iscrizioni) {
+    public Sportello(long id_sportello, String nome_sportello, String descrizione_sportello, Persona docente_responsabile, Materia materia, Aula aula, List<Giorno> giorni, List<IscrizioneSportello> iscrizioni) {
         this.id_sportello = id_sportello;
         this.docente_responsabile = docente_responsabile;
         this.materia = materia;
         this.aula = aula;
-        this.num_iscritti = num_iscritti;
-        this.max_iscritti = max_iscritti;
         this.nome_sportello = nome_sportello;
         this.descrizione_sportello = descrizione_sportello;
         this.giorni = giorni;
@@ -64,14 +59,6 @@ public class Sportello {
 
     public String getDescrizione_sportello() {
         return descrizione_sportello;
-    }
-
-    public int getMax_iscritti() {
-        return max_iscritti;
-    }
-
-    public int getNum_iscritti() {
-        return num_iscritti;
     }
 
     public Aula getAula() {
@@ -90,6 +77,10 @@ public class Sportello {
         return giorni;
     }
 
+    public boolean isSportello_disponibile() {
+        return sportello_disponibile;
+    }
+
     public long getId_sportello() {
         return id_sportello;
     }
@@ -106,14 +97,6 @@ public class Sportello {
         this.descrizione_sportello = descrizione_sportello;
     }
 
-    public void setMax_iscritti(int max_iscritti) {
-        this.max_iscritti = max_iscritti;
-    }
-
-    public void setNum_iscritti(int num_iscritti) {
-        this.num_iscritti = num_iscritti;
-    }
-
     public void setAula(Aula aula) {
         this.aula = aula;
     }
@@ -128,6 +111,10 @@ public class Sportello {
 
     public void setGiorni(List<Giorno> giorni) {
         this.giorni = giorni;
+    }
+
+    public void setSportello_disponibile(boolean sportello_disponibile) {
+        this.sportello_disponibile = sportello_disponibile;
     }
 
     public List<IscrizioneSportello> getIscrizioni() {
