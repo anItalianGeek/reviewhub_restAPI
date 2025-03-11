@@ -10,12 +10,14 @@ import org.main.models.wrappers.WrapperSportelliDocente;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -119,14 +121,37 @@ public class SportelloController {
                 response.getDocente_responsabile().setAuthTokens(null);
                 sportellos.add(response);
 
-                if (personaRepository.ottieniRuolo(author + DOMAIN).equals(UserIdentity.STUDENT)) {
-                    sportellos.getFirst().setIscrizioni(null);
+                UserIdentity ruoloAttuale = personaRepository.ottieniRuolo(author + DOMAIN);
+                if (ruoloAttuale.equals(UserIdentity.STUDENT) || (!response.getDocente_responsabile().getEmail().split("@")[0].equals(author) && !ruoloAttuale.equals(UserIdentity.ADMIN))) {
+                    sportellos.forEach(sportello -> sportello.setIscrizioni(null));
+                    List<Object[]> tutteIscrizioniUtente = sportelloRepository.getIscrizioniNelloSportello(response.getId_sportello(), author + DOMAIN);
+                    
+                    tutteIscrizioniUtente.forEach(iscrizione -> {
+                        LinkedList<String> personeIscritte = new LinkedList<>();
+                        Persona persona = (Persona) iscrizione[0]; 
+                        personeIscritte.add(
+                                persona.getNome() + " " + persona.getCognome() + " [Classe: " + persona.getClasse() +  "] (" + persona.getEmail() + ")"
+                        );
+                        iscrizioni.add(new Iscrizione((GiornoId) iscrizione[1], personeIscritte));
+                    });
                 } else {
-                    List<Persona> iscrittiAlloSportello = sportelloRepository.getIscrittiNelloSportello(response.getId_sportello());
-                    LinkedList<String> iscritti = new LinkedList<>();
-                    for (Persona persona : iscrittiAlloSportello)
-                        iscritti.add(persona.getNome() + " " + persona.getCognome() + " (" + persona.getEmail() + ")");
-                    iscrizioni.add(new Iscrizione(response.getId_sportello(), iscritti));
+                    List<Object[]> tutteIscrizioni = sportelloRepository.getIscrizioniNelloSportello(response.getId_sportello());
+                    
+                    HashMap<GiornoId, List<Persona>> iscrizioniHashmap = new HashMap<>();
+                    tutteIscrizioni.forEach(iscrizione -> {
+                        Persona persona = (Persona) iscrizione[0];
+                        GiornoId giornoId = (GiornoId) iscrizione[1];
+
+                        iscrizioniHashmap.putIfAbsent(giornoId, new LinkedList<>());
+                        iscrizioniHashmap.get(giornoId).add(persona);
+                    });
+
+
+                    iscrizioniHashmap.keySet().forEach(giornoId -> {
+                        LinkedList<String> personeIscritte = new LinkedList<>();
+                        iscrizioniHashmap.get(giornoId).forEach(persona -> personeIscritte.add(persona.getNome() + " " + persona.getCognome() + " [Classe: " + persona.getClasse() +  "] (" + persona.getEmail() + ")"));
+                        iscrizioni.add(new Iscrizione(giornoId, personeIscritte));
+                    });
                 }
 
                 return new ResponseEntity<>(new WrapperSportelliDocente(sportellos, iscrizioni), HttpStatus.OK);
@@ -142,17 +167,30 @@ public class SportelloController {
             LinkedList<Iscrizione> iscrizioni = new LinkedList<>();
 
             for (Sportello sportello : sportelli) {
-                List<Persona> iscrittiAlloSportello = sportelloRepository.getIscrittiNelloSportello(sportello.getId_sportello());
                 sportello.getAula().setSportelli(null);
                 sportello.getMateria().setSportelli(null);
                 sportello.getDocente_responsabile().setPassword(null);
                 sportello.getDocente_responsabile().setIscrizioni(null);
                 sportello.getDocente_responsabile().setSportelli(null);
                 sportello.getDocente_responsabile().setAuthTokens(null);
-                LinkedList<String> iscritti = new LinkedList<>();
-                for (Persona persona : iscrittiAlloSportello)
-                    iscritti.add(persona.getNome() + " " + persona.getCognome() + " (" + persona.getEmail() + ")");
-                iscrizioni.add(new Iscrizione(sportello.getId_sportello(), iscritti));
+
+                List<Object[]> tutteIscrizioni = sportelloRepository.getIscrizioniNelloSportello(sportello.getId_sportello());
+
+                HashMap<GiornoId, List<Persona>> iscrizioniHashmap = new HashMap<>();
+                tutteIscrizioni.forEach(iscrizione -> {
+                    Persona persona = (Persona) iscrizione[0];
+                    GiornoId giornoId = (GiornoId) iscrizione[1];
+                    if (iscrizioniHashmap.containsKey(giornoId))
+                        iscrizioniHashmap.get(giornoId).add(persona);
+                    else
+                        iscrizioniHashmap.put(giornoId, new LinkedList<>());
+                });
+
+                iscrizioniHashmap.keySet().forEach(giornoId -> {
+                    LinkedList<String> personeIscritte = new LinkedList<>();
+                    iscrizioniHashmap.get(giornoId).forEach(persona -> personeIscritte.add(persona.getNome() + " " + persona.getCognome() + " [Classe: " + persona.getClasse() +  "] (" + persona.getEmail() + ")"));
+                    iscrizioni.add(new Iscrizione(giornoId, personeIscritte));
+                });
             }
 
             WrapperSportelliDocente wrapper = new WrapperSportelliDocente(new LinkedList<>(sportelli), iscrizioni);
@@ -162,18 +200,18 @@ public class SportelloController {
 
     @Async("requestHandler")
     @PostMapping("/subscribe/{id}")
-    public CompletableFuture<ResponseEntity<String>> iscriviAlloSportello(@PathVariable long id, @RequestParam String author) {
+    public CompletableFuture<ResponseEntity<String>> iscriviAlloSportello(@PathVariable long id, @RequestParam String author, @RequestBody GiornoId giornoId) {
         return CompletableFuture.supplyAsync(() -> {
-            int righeModificate = sportelloRepository.aggiungiIscritto(id);
-
-            if (righeModificate == 0)
-                return new ResponseEntity<>("Operazione Fallita", HttpStatus.INTERNAL_SERVER_ERROR);
+            Giorno giorno = giornoRepository.findById(giornoId).orElse(null);
+            if (giorno == null)
+                return new ResponseEntity<>("Giornata/e non trovata/e", HttpStatus.NOT_FOUND);
             else {
+                giornoRepository.aggiungiIscritto(giornoId);
                 Sportello sportello = sportelloRepository.findById(id).orElse(null);
                 Persona persona = personaRepository.findById(author + DOMAIN).orElse(null);
                 if (persona == null || sportello == null)
-                    return new ResponseEntity<>("Operazione Fallita.", HttpStatus.NOT_FOUND);
-                iscrizioneSportelloRepository.save(new IscrizioneSportello(sportello, persona));
+                    return new ResponseEntity<>("Utente o sportello non trovato", HttpStatus.NOT_FOUND);
+                iscrizioneSportelloRepository.save(new IscrizioneSportello(sportello, persona, giorno));
                 return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.CREATED);
             }
         });
@@ -187,6 +225,8 @@ public class SportelloController {
         return CompletableFuture.supplyAsync(() -> {
             // Rimuovi i giorni temporaneamente
             List<Giorno> giorni = datiNuovoSportello.getGiorni();
+            if (giorni == null || giorni.isEmpty())
+                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             datiNuovoSportello.setGiorni(null);
 
             // Salva lo sportello senza giorni
@@ -215,14 +255,13 @@ public class SportelloController {
             else {
                 if (!sportello.getNome_sportello().equals(datiSportello.getNome_sportello())) sportello.setNome_sportello(datiSportello.getNome_sportello());
                 if (!sportello.getDescrizione_sportello().equals(datiSportello.getDescrizione_sportello())) sportello.setDescrizione_sportello(datiSportello.getDescrizione_sportello());
-                if (sportello.getMax_iscritti() != datiSportello.getMax_iscritti()) sportello.setMax_iscritti(datiSportello.getMax_iscritti());
                 if (sportello.getAula().getId() != datiSportello.getAula().getId()) sportello.setAula(datiSportello.getAula());
                 if (!sportello.getMateria().getNome().equals(datiSportello.getMateria().getNome())) sportello.setMateria(sportello.getMateria());
                 if (!sportello.getDocente_responsabile().getEmail().equals(datiSportello.getDocente_responsabile().getEmail())) sportello.setDocente_responsabile(datiSportello.getDocente_responsabile());
                 if (!sportello.getGiorni().equals(datiSportello.getGiorni())) {
                     List<Giorno> giorni = datiSportello.getGiorni();
                     sportello.setGiorni(null);
-                    giornoRepository.cancellaGiorni(id);
+                    //giornoRepository.cancellaGiorni(id);
                     giorni.forEach(g -> {
                         g.setSportello(sportello);
                         g.getId().setSportelloId(sportello.getId_sportello());
@@ -242,41 +281,42 @@ public class SportelloController {
     }
 
     @Async("requestHandler")
+    @PostMapping("/unsubscribe/{id}")
+    @Transactional
+    public CompletableFuture<ResponseEntity<String>> disiscriviDalloSportello(@PathVariable long id, @RequestParam String author, @RequestBody GiornoId giornoId) {
+        return CompletableFuture.supplyAsync(() -> {
+            iscrizioneSportelloRepository.cancellaIscrizione(id, author + DOMAIN, giornoId.getData_inizioId(), giornoId.getData_fineId());
+            giornoRepository.rimuoviIscritto(giornoId);
+            if (iscrizioneSportelloRepository.esisteIscrizione(id, author + DOMAIN, giornoId.getData_inizioId(), giornoId.getData_fineId()) != 1)
+                return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.NO_CONTENT);
+            else
+                throw new RuntimeException("Operazione fallita.");
+        });
+    }
+    
+    @Async("requestHandler")
     @DeleteMapping("/remove/{id}")
     public CompletableFuture<ResponseEntity<String>> cancellaSportello(@PathVariable long id) {
         return CompletableFuture.supplyAsync(() -> {
-            giornoRepository.cancellaGiorni(id);
             iscrizioneSportelloRepository.cancellaTutteIscrizioni(id);
+            giornoRepository.cancellaGiorni(id);
             sportelloRepository.deleteById(id);
             return new ResponseEntity<>("Operazione avvenuta con successo", HttpStatus.NO_CONTENT);
         });
     }
 
     @Async("requestHandler")
-    @DeleteMapping("/{id}/remove-subscription/{username}")
+    @PostMapping("/{id}/remove-subscription/{username}")
     @Transactional
-    public CompletableFuture<ResponseEntity<String>> rimuoviIscritto(@PathVariable long id, @PathVariable String username){
+    public CompletableFuture<ResponseEntity<String>> rimuoviIscritto(@PathVariable long id, @PathVariable String username, @RequestBody GiornoId giornoId){
         return CompletableFuture.supplyAsync(() -> {
-            sportelloRepository.rimuoviIscritto(id);
-            iscrizioneSportelloRepository.cancellaIscrizione(id, username + DOMAIN);
-            if (iscrizioneSportelloRepository.esisteIscrizione(id, username + DOMAIN) != 1)
+            iscrizioneSportelloRepository.cancellaIscrizione(id, username + DOMAIN, giornoId.getData_inizioId(), giornoId.getData_fineId());
+            if (iscrizioneSportelloRepository.esisteIscrizione(id, username + DOMAIN, giornoId.getData_inizioId(), giornoId.getData_fineId()) != 1) {
+                giornoRepository.rimuoviIscritto(giornoId);
                 return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.NO_CONTENT);
+            }
             else 
-                throw new RuntimeException("Operazione fallita.");
-        });
-    }
-
-    @Async("requestHandler")
-    @DeleteMapping("/unsubscribe/{id}")
-    @Transactional
-    public CompletableFuture<ResponseEntity<String>> disiscriviDalloSportello(@PathVariable long id, @RequestParam String author) {
-        return CompletableFuture.supplyAsync(() -> {
-            sportelloRepository.rimuoviIscritto(id);
-            iscrizioneSportelloRepository.cancellaIscrizione(id, author + DOMAIN);
-            if (iscrizioneSportelloRepository.esisteIscrizione(id, author + DOMAIN) != 1)
-                return new ResponseEntity<>("Operazione Compiuta con Successo", HttpStatus.NO_CONTENT);
-            else
-                throw new RuntimeException("Operazione fallita.");
+                return new ResponseEntity<>("Operazione fallita", HttpStatus.BAD_REQUEST);
         });
     }
     

@@ -1,6 +1,7 @@
 package org.main.models;
 
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -9,7 +10,10 @@ import java.util.Objects;
 public class IscrizioneSportelloId implements Serializable {
     private Long sportelloId;
     private String personaId;
-
+    
+    @Embedded
+    private GiornoId giornoId;
+    
     public IscrizioneSportelloId() {
     }
 
@@ -27,6 +31,14 @@ public class IscrizioneSportelloId implements Serializable {
 
     public void setPersonaId(String personaId) {
         this.personaId = personaId;
+    }
+
+    public GiornoId getGiornoId() {
+        return giornoId;
+    }
+
+    public void setGiornoId(GiornoId giornoId) {
+        this.giornoId = giornoId;
     }
 
     @Override

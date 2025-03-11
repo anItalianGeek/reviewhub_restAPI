@@ -1,23 +1,18 @@
 package org.main.models.wrappers;
 
+import org.main.models.Giorno;
+import org.main.models.GiornoId;
+
 import java.util.LinkedList;
 
 public class Iscrizione {
 
-    private long idSportello;
+    private GiornoId id;
     private LinkedList<String> iscritti;
 
-    public Iscrizione(long idSportello, LinkedList<String> iscritti) {
+    public Iscrizione(GiornoId id, LinkedList<String> iscritti) {
+        this.id = id;
         this.iscritti = iscritti;
-        this.idSportello = idSportello;
-    }
-
-    public long getIdSportello() {
-        return idSportello;
-    }
-
-    public void setIdSportello(long idSportello) {
-        this.idSportello = idSportello;
     }
 
     public LinkedList<String> getIscritti() {
@@ -28,4 +23,11 @@ public class Iscrizione {
         this.iscritti = iscritti;
     }
 
+    public GiornoId getId() {
+        return id;
+    }
+
+    public void setId(GiornoId id) {
+        this.id = id;
+    }
 }

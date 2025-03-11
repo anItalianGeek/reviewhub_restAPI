@@ -40,5 +40,8 @@ public interface PersonaRepository extends JpaRepository<Persona, String> {
     // Ottieni il ruolo della persona
     @Query("SELECT p.ruolo FROM Persona p WHERE p.email = :user")
     UserIdentity ottieniRuolo(@Param("user") String user);
-    
+
+    // Verifica se la password corrisponde con quella dell'utente
+    @Query("SELECT COUNT(p) > 0 FROM Persona p WHERE p.email = :user AND p.password = :password")
+    Boolean verificaPassword(@Param("user") String user, @Param("password") String password);
 }
