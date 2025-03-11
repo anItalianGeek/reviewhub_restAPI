@@ -12,7 +12,7 @@ public class WebConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:4200"); // Permetti il frontend Angular
+        config.addAllowedOriginPattern("*"); // Permetti tutte le entrate
         config.addAllowedMethod("*"); // Permetti tutti i metodi (GET, POST, PUT, DELETE, ecc.)
         config.addAllowedHeader("*"); // Permetti tutte le intestazioni
         config.setAllowCredentials(true); // Consenti l'invio di cookie o token

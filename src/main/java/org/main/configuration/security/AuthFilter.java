@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 public class AuthFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthFilter.class);
-    private static final String jdbcUrl = "jdbc:mysql://localhost:3306/reviewhub_db?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true";
+    private static final String jdbcUrl = "jdbc:mariadb://localhost:3306/reviewhub_db?sslMode=TRUST";
     private static final String username = "admin";
-    private static final String password = "admin";
+    private static final String password = "#ZPe*Ku!";
     private static Connection connection;
     private static final Semaphore mutex = new Semaphore(1);
     private static final String DOMAIN = "@chilesotti.it";
