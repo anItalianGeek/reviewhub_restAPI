@@ -37,6 +37,12 @@ public class AuthFilter extends OncePerRequestFilter {
     public AuthFilter() {
         try {
             connection = DriverManager.getConnection(jdbcUrl, username, password);
+	    new Thread(() -> {
+		try {
+		    Thread.sleep(300000);
+     		    connection.prepareStatement("SELECT 1").executeQuery();
+		} catch (Exception e) {}
+	    }).start();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
