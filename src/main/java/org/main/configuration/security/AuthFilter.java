@@ -9,12 +9,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.stereotype.Component;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,28 +26,16 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
+@Component
 public class AuthFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthFilter.class);
-    private static final String jdbcUrl = "jdbc:mariadb://localhost:3306/reviewhub_db?sslMode=TRUST";
-    private static final String username = "admin";
-    private static final String password = "#ZPe*Ku!";
-    private static Connection connection;
-    private static final Semaphore mutex = new Semaphore(1);
     private static final String DOMAIN = "@chilesotti.it";
+    private final DataSource dataSource;
+    private final Gson gson = new GsonBuilder().create();
 
-    public AuthFilter() {
-        try {
-            connection = DriverManager.getConnection(jdbcUrl, username, password);
-	    new Thread(() -> {
-		try {
-		    Thread.sleep(300000);
-     		    connection.prepareStatement("SELECT 1").executeQuery();
-		} catch (Exception e) {}
-	    }).start();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    public AuthFilter(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @Override
@@ -135,51 +125,50 @@ public class AuthFilter extends OncePerRequestFilter {
 
     // Logica per verificare la validità del token
     private boolean isValidAuthToken(String username, String token) {
-        try {
-            mutex.acquire();
-            PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM auth_token WHERE user_id = ? AND token = ? AND expires_at > ?");
+        try (Connection connection = dataSource.getConnection();  // <-- Modifica qui
+             PreparedStatement statement = connection.prepareStatement(
+                 "SELECT 1 FROM auth_token WHERE user_id = ? AND token = ? AND expires_at > ?")) {
+            
             statement.setString(1, username + DOMAIN);
             statement.setString(2, token);
             statement.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
-            return statement.executeQuery().next();
-        } catch (InterruptedException | SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            mutex.release();
+            
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException e) {
+            logger.error("Error validating token", e);
+            return false;
         }
     }
 
     private String getDocenteResponsabileForSportello(long id) {
-        try {
-            mutex.acquire();
-            PreparedStatement statement = connection.prepareStatement("SELECT docente_responsabile FROM sportello WHERE id_sportello = ?");
+        try (Connection connection = dataSource.getConnection();  // <-- Modifica qui
+             PreparedStatement statement = connection.prepareStatement(
+                 "SELECT docente_responsabile FROM sportello WHERE id_sportello = ?")) {
+            
             statement.setLong(1, id);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next())
-                return resultSet.getString("docente_responsabile");
-            else
-                return "";
-        } catch (SQLException | InterruptedException ignored) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("docente_responsabile") : "";
+            }
+        } catch (SQLException e) {
+            logger.error("Error fetching docente", e);
             return "";
-        } finally {
-            mutex.release();
         }
     }
 
     private String getRole(String username) {
-        try {
-            mutex.acquire();
-            PreparedStatement statement = connection.prepareStatement("SELECT ruolo FROM persona WHERE email = ?");
+        try (Connection connection = dataSource.getConnection();  // <-- Modifica qui
+             PreparedStatement statement = connection.prepareStatement(
+                 "SELECT ruolo FROM persona WHERE email = ?")) {
+            
             statement.setString(1, username + DOMAIN);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next())
-                return resultSet.getString("ruolo");
-            else
-                return "";
-        } catch (InterruptedException | SQLException ignored) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("ruolo") : "";
+            }
+        } catch (SQLException e) {
+            logger.error("Error fetching role", e);
             return "";
-        } finally {
-            mutex.release();
         }
     }
 

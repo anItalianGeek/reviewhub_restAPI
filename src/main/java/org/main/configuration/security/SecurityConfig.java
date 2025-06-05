@@ -16,6 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    private final AuthFilter authFilter;
+
+    public SecurityConfig(AuthFilter authFilter) {
+        this.authFilter = authFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -25,7 +30,7 @@ public class SecurityConfig {
          * TUTTE LE RICHIESTE SENZA Authorization VERRANNO RIFIUTATE
          * */
         return http
-                .addFilterBefore(new AuthFilter(), UsernamePasswordAuthenticationFilter.class) // Filtro personalizzato
+                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class) // Filtro personalizzato
                 .csrf(csrf -> csrf.disable()) // Disabilitazione CSRF
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form.disable()) // Disabilita formLogin
