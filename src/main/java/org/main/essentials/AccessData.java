@@ -1,6 +1,6 @@
 package org.main.essentials;
 
-import org.main.models.UserIdentity;
+import org.main.v1.models.UserIdentity;
 
 public class AccessData {
 

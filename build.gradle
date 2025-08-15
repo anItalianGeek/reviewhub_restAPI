@@ -17,6 +17,7 @@ dependencies {
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat', version: '3.4.1'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '3.4.1'
     implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '11.0.2'
+    implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '3.5.1'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

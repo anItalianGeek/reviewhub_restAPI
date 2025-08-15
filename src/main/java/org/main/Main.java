@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.IOException;
 
-@EntityScan(basePackages = "org.main.models")
-@EnableJpaRepositories(basePackages = "org.main.controllers.repositories")
+@EntityScan(basePackages = "org.main.v1.models")
+@EnableJpaRepositories(basePackages = "org.main.v1.controllers.repositories")
 @SpringBootApplication
 public class Main {
 
