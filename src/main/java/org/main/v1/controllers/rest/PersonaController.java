@@ -1,6 +1,8 @@
 package org.main.v1.controllers.rest;
 
+import io.jsonwebtoken.Claims;
 import org.apache.commons.text.StringEscapeUtils;
+import org.main.essentials.JwtUtil;
 import org.main.v1.controllers.repositories.AuthTokenRepository;
 import org.main.v1.controllers.repositories.PersonaRepository;
 import org.main.v1.controllers.repositories.SportelloRepository;
@@ -34,14 +36,14 @@ public class PersonaController {
     
     private static final String DOMAIN = "@chilesotti.it";
     private final PersonaRepository personaRepository;
-    private final AuthTokenRepository authTokenRepository;
     private final SportelloRepository sportelloRepository;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public PersonaController(PersonaRepository personaRepository, AuthTokenRepository authTokenRepository, SportelloRepository sportelloRepository) {
+    public PersonaController(PersonaRepository personaRepository, SportelloRepository sportelloRepository,  JwtUtil jwtUtil) {
         this.personaRepository = personaRepository;
-        this.authTokenRepository = authTokenRepository;
         this.sportelloRepository = sportelloRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @Async("requestHandler")
@@ -128,8 +130,7 @@ public class PersonaController {
             persona.setPassword(StringEscapeUtils.escapeHtml4(persona.getPassword()));
 
             if (personaRepository.verificaPassword(persona.getEmail(), SHA256Encryptor.encrypt(persona.getPassword()))) {
-                String token = SHA256Encryptor.encrypt(ServerSignatureGenerator.generateSignature());
-                authTokenRepository.save(new AuthToken(token, persona));
+                String token = jwtUtil.generateToken(persona.getEmail());
                 return new ResponseEntity<>(new AccessData(token, personaRepository.ottieniRuolo(persona.getEmail())), HttpStatus.CREATED);
             } else
                 return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
@@ -137,14 +138,10 @@ public class PersonaController {
     }
 
     @Async("requestHandler")
-    @DeleteMapping("logout")
+    @DeleteMapping("/logout")
     public CompletableFuture<ResponseEntity<Boolean>> disconnetti(@RequestParam String author){
         return CompletableFuture.supplyAsync(() -> {
-            authTokenRepository.logout(author + DOMAIN);
-            if (authTokenRepository.esistonoToken(author + DOMAIN) != 0)
-                throw new RuntimeException("Logout Fallito");
-            else 
-                return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
+            return ResponseEntity.ok(true);
         });
     }
     
@@ -180,6 +177,16 @@ public class PersonaController {
         });
     }
 
+    @Async("requestHandler")
+    @PutMapping("/refresh")
+    public CompletableFuture<ResponseEntity<AccessData>> ricaricaToken(@RequestHeader("Authorization") String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            Claims claims = jwtUtil.validateToken(token.replace("Bearer ", "").trim().replaceAll("\\s+", ""));
+            String newToken = jwtUtil.generateToken(claims.getSubject());
+            return ResponseEntity.ok(new AccessData(newToken, UserIdentity.NONE));
+        });
+    }
+    
     @Async("requestHandler")
     @PutMapping("/modify/{user}")
     public CompletableFuture<ResponseEntity<Persona>> aggiornaPersona(@RequestBody Persona datiPersona, @PathVariable String user) {

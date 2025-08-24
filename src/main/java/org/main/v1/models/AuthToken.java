@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "auth_token")
+@Deprecated
 public class AuthToken {
 
     @EmbeddedId

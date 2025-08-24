@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+@Deprecated
 public interface AuthTokenRepository extends JpaRepository<AuthToken, AuthTokenId> {
 
     // Verifica se un token esiste e non è scaduto

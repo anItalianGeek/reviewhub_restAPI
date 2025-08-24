@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 // Nested embedded ID class
+@Deprecated
 @Embeddable
 public class AuthTokenId implements Serializable {
 

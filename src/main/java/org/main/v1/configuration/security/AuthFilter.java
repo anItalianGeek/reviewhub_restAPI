@@ -2,8 +2,11 @@ package org.main.v1.configuration.security;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.jsonwebtoken.Claims;
+import org.main.essentials.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,9 +35,11 @@ public class AuthFilter extends OncePerRequestFilter {
     private static final String DOMAIN = "@chilesotti.it";
     private final DataSource dataSource;
     private final Gson gson = new GsonBuilder().create();
+    private final JwtUtil jwtUtil;
 
-    public AuthFilter(DataSource dataSource) {
+    public AuthFilter(DataSource dataSource, JwtUtil jwtUtil) {
         this.dataSource = dataSource;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -51,13 +56,12 @@ public class AuthFilter extends OncePerRequestFilter {
         String role = getRole(username);
 
         // Verifica la validità del token
-        if (authToken == null || !isValidAuthToken(username, authToken.replace("Bearer ", ""))) {
+        if (authToken == null || jwtUtil.validateToken(authToken.replace("Bearer ", "").trim().replaceAll("\\s+", "")).getSubject() == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Unauthorized: Missing or Invalid Token");
             return;
         }
         
-        Gson gson = new GsonBuilder().create();
         if (path.equals("/sportello/all") || path.equals("/users/all") || path.matches("^\\/\\d+\\/remove-subscription\\/[a-zA-Z0-9_]+$") || path.matches("^/materia/.+\n") || path.matches("^/aula/.+\n") ) {
             if (!role.equals("ADMIN")) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
