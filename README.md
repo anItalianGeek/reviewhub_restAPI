@@ -54,10 +54,14 @@ endpoints are public.
 
 ## Authorization
 
-Role checks alone weren't enough, so authorization happens at two levels:
+Roles and ownership do different jobs here:
 
-- **By role** — creating a sportello requires `TEACHER` or `ADMIN`; listing all users requires `ADMIN`.
-- **By ownership** — modifying or deleting a sportello requires being *the teacher responsible for that specific sportello*, or an admin. A teacher can't touch another teacher's sessions.
+- **Role decides what you can create.** `TEACHER` or `ADMIN` can open a sportello; `ADMIN` alone can manage users, rooms and subjects.
+- **Ownership decides what you can change.** Editing or deleting a sportello requires being the teacher responsible for *that* sportello. Holding the `TEACHER` role isn't enough: a teacher can't touch another teacher's sessions.
+- **Admins bypass ownership**, by design.
+
+Being a teacher is an organizational fact and a permission to create, not blanket
+authority over every session in the system.
 
 ## Booking rules
 
