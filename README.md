@@ -1,116 +1,93 @@
-# Server - Backend Spring Boot
+# ReviewHub API
 
-## Prerequisiti
-- Java 17 o superiore
-- Gradle (`brew install gradle` su macOS, `apt install gradle` su Ubuntu)
+Spring Boot backend for a school tutoring-desk system. Teachers open *sportelli* —
+tutoring sessions on a given subject, in a given room, across one or more dated time
+slots. Students browse what's available and book individual slots. Admins manage
+everyone and everything.
 
----
+Built during my final year of high school, and deployed for real: it ran on a Raspberry
+Pi inside the school network, on its own DNS name, behind Apache with TLS, as a systemd
+service that had to survive a reboot without me.
 
-## Installazione
-1. Clona il repository:
-   ```bash
-   git clone [URL_DEL_REPO]
-   cd [NOME_CARTELLA_SERVER]
-   ```
-
-2. Compila il progetto:
-   ```bash
-   ./gradlew build
-   ```
+**Frontend**: [anItalianGeek/reviewhub](https://github.com/anItalianGeek/reviewhub)
 
 ---
 
-## Avvio Locale
-1. Avvia l'app:
-   ```bash
-   ./gradlew bootRun
+## Stack
 
-2. L'app sarà disponibile su [http://localhost:8080](http://localhost:8080).
-
----
-
-## Build per Produzione
-1. Genera il file `.jar`:
-   ```bash
-   ./gradlew bootJar
-   ```
-
-2. Troverai il file nella directory `build/libs`.
+- **Spring Boot 3.3** · Java 17 · Gradle
+- **Spring Security** with JWT authentication (`jjwt` 0.12.3)
+- **Spring Data JPA** on MariaDB
+- Embedded Tomcat
 
 ---
 
-## Deploy su Server
-1. Carica il file `.jar` sul server.  
-2. Avvia l'app manualmente:  
-   ```bash
-   java -jar nome-progetto-0.0.1-SNAPSHOT.jar
-   ```
-3. (Opzionale) Configura come servizio systemd:  
-   ```bash
-   sudo nano /etc/systemd/system/nome-progetto.service
-   ```
-   Contenuto del file:
-   ```ini
-   [Unit]
-   Description=Spring Boot Application
-   After=network.target
+## Domain model
 
-   [Service]
-   User=tuo-utente
-   ExecStart=/usr/bin/java -jar /path/al/file/nome-progetto-0.0.1-SNAPSHOT.jar
-   SuccessExitStatus=143
-   Restart=always
-   StandardOutput=journal
-   StandardError=journal
+```
+Person ──< Sportello >── Room
+   │           │
+   │           └──── Subject
+   │           │
+   │           └──< Slot
+   │                 │
+   └────< Booking >──┘
+```
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
-   Abilita e avvia il servizio 
-   ```bash
-   sudo systemctl enable nome-progetto
-   sudo systemctl start nome-progetto
-   ```
+- **Person** — a student, a teacher, or an admin. Roles: `STUDENT`, `TEACHER`, `ADMIN`.
+- **Sportello** — a tutoring session, tied to a room, a subject and a responsible teacher.
+- **Slot** — a single dated time window within a sportello, with limited capacity.
+- **Booking** — one student against one slot.
+- **Room** and **Subject** — reference data, admin-managed.
 
-4. Configurazione Certificato HTTPS in Spring Boot con `application.properties`
-- Ottieni il Certificato Let's Encrypt (Consigliato)   
-   Installa Certbot per ottenere un certificato gratuito da Let's Encrypt:  
-   ```bash
-   sudo apt update
-   sudo apt install certbot
-   ```
+---
 
-- Genera il Certificato:
-   ```bash
-   sudo certbot certonly --standalone -d tuo-dominio.com
-   ```
+## Authentication
 
-- Configura Spring Boot per HTTPS:   
-   Modifica il file `application.properties` con le seguenti righe:  
-   ```properties
-   server.port=443
-   server.ssl.key-store=file:/etc/letsencrypt/live/tuo-dominio.com/keystore.p12
-   server.ssl.key-store-password=tuo-password
-   server.ssl.key-store-type=PKCS12
-   server.ssl.key-alias=tuo-alias
-   ```
+Credentials go to `POST /users/login`, which returns a signed token and the caller's
+role. Every protected endpoint expects `Authorization: Bearer {token}`.
 
-- Converti il Certificato in Keystore (se non hai già un keystore):  
-   Se Let's Encrypt ti ha fornito i certificati in formato PEM, puoi convertirli in un formato PKCS12 (necessario per Spring Boot) con questo comando:
-   ```bash
-   openssl pkcs12 -export -in /etc/letsencrypt/live/tuo-dominio.com/fullchain.pem \
-   -inkey /etc/letsencrypt/live/tuo-dominio.com/privkey.pem \
-   -out keystore.p12 \
-   -name tuo-alias
-   ```
+Tokens are **HMAC-SHA signed and expire after 20 minutes**. Rather than issuing
+long-lived tokens, `PUT /users/refresh` exchanges a still-valid token for a fresh one, so
+a leaked token has a short useful life. Only login, email availability and the health
+endpoints are public.
 
-- Riavvia il Servizio:  
-   Dopo aver configurato il certificato, riavvia l'app Spring Boot. Se l'hai configurata come servizio `systemd`, esegui:  
-   ```bash
-   sudo systemctl restart nome-progetto
-   ```
+## Authorization
 
-## Note
-- Configura CORS per il frontend se necessario.
-- Assicurati che il server risponda alle richieste del frontend in produzione.
-- Assicurati di inserire correttamente in `application.properties` i dati necessari alla connessione con il database!
+Role checks alone weren't enough, so authorization happens at two levels:
+
+- **By role** — creating a sportello requires `TEACHER` or `ADMIN`; listing all users requires `ADMIN`.
+- **By ownership** — modifying or deleting a sportello requires being *the teacher responsible for that specific sportello*, or an admin. A teacher can't touch another teacher's sessions.
+
+## Booking rules
+
+Booking isn't a plain insert. `POST /sportello/subscribe/{id}` rejects the request when
+the slot is full, or when it overlaps something the student is already booked into, so
+capacity and schedule conflicts are enforced server-side rather than trusted from the
+client.
+
+---
+
+## API
+
+Base path: `/api/v1`
+
+| Group | Endpoints |
+|---|---|
+| **Users** | login · refresh · logout · create · modify · remove · list · detail · email availability |
+| **Sportelli** | list all · available · subscribed · by teacher · detail · create · modify · remove · subscribe · unsubscribe |
+| **Rooms** | list · create · update · delete |
+| **Subjects** | list · create · update · delete |
+
+List endpoints are paginated with `offset` and `limit`.
+
+---
+
+## Running locally
+
+```bash
+./gradlew bootRun
+```
+
+Requires a reachable MariaDB instance; credentials go in `application.properties`.
+The app listens on `http://localhost:8888`.
