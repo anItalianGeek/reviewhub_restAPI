@@ -2,9 +2,9 @@
 
 Spring Boot REST backend for a school tutoring-desk (*sportelli didattici*) system. Teachers open *sportelli* — tutoring sessions on a given subject, in a given room, across one or more dated time slots. Students browse available sessions and book individual slots. Admins manage users, rooms, subjects, and sessions.
 
-> **School project (2024/2025).** This is the original high-school implementation. The deployment described here is historical; its current availability has not been verified. Read the [implementation notes & known limitations](#implementation-notes--known-limitations) before reusing it.
+> **School project archive (2024/2025).** Preserved as a record of the project, without active development or maintenance. Read the [implementation notes & known limitations](#implementation-notes--known-limitations) before reusing the code.
 
-Built during my final year of high school, and deployed for real: it ran on a Raspberry Pi inside the school network, on its own DNS name, behind Apache with TLS, as a `systemd` service that had to survive a reboot without me.
+Built during my final year of high school. Its only deployment was at school: a Raspberry Pi inside the school network, its own DNS name, Apache with TLS, and a `systemd` service that had to survive a reboot without me.
 
 **Frontend**: [anItalianGeek/reviewhub](https://github.com/anItalianGeek/reviewhub)
 
