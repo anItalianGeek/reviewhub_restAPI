@@ -237,7 +237,7 @@ public class SportelloController {
         });
     }
 
-    /** METODO REVISIONATO IN SEGUITO ATTEGIAMENTI FROCI DA PARTE DI SPRING */
+    /** Salva prima lo sportello e poi persiste separatamente le giornate associate. */
     @Async("requestHandler")
     @PostMapping("/create")
     @Transactional
